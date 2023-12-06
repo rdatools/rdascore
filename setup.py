@@ -29,7 +29,7 @@ setup(
     ],
     install_requires=[
         "pytest",
-        "rdadata",
+        "rdabase",
         "rdapy",
     ],
     zip_safe=False,

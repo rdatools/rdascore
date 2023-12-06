@@ -13,7 +13,7 @@ $ scripts/run_batch.py
 import os
 from typing import List
 
-from rdadata import data_dir
+from rdabase import data_dir
 from rdascore import *
 
 states: List[str] = [

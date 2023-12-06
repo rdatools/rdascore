@@ -10,13 +10,13 @@ I've converted this into a pip installable package:
 $ pip install rdascore
 ```
 
-As noted next, you probably also want to clone the companion [rdadata](https://github.com/alecramsay/rdadata) repository.
+As noted next, you probably also want to clone the companion [rdabase](https://github.com/alecramsay/rdabase) repository.
 
 ## Usage
 
 There are both code and script examples of how to use this code in the `sample` directory.
 That directory also contains some sample results from the main scoring function `analyze_plan()`.
-The samples use data from the companion `rdadata` repo.
+The samples use data from the companion `rdabase` repo.
 
 ## Notes
 

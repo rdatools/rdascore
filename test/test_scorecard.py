@@ -4,7 +4,7 @@ TEST SAMPLE SCORECARDS
 
 from typing import Any, Dict, List
 
-import rdadata as rdd
+import rdabase as rdb
 import rdapy as rda
 
 from rdascore.load import *
@@ -21,17 +21,17 @@ class TestScorecard:
             plan_path: str = f"sample/{xx}20C_baseline_100.csv"
             plan: List[Dict[str, str | int]] = load_plan(plan_path)
 
-            data_project: str = "../rdadata"
+            data_project: str = "../rdabase"
             shared_data_dir: str = f"{data_project}/data/"
 
-            data_path: str = rdd.path_to_file([shared_data_dir, xx]) + rdd.file_name(
-                [xx, rdd.cycle, "data"], "_", "csv"
+            data_path: str = rdb.path_to_file([shared_data_dir, xx]) + rdb.file_name(
+                [xx, rdb.cycle, "data"], "_", "csv"
             )
-            shapes_name: str = f"{xx}_{rdd.cycle}_shapes_simplified.json"
-            shapes_path: str = rdd.path_to_file([shared_data_dir, xx]) + shapes_name
+            shapes_name: str = f"{xx}_{rdb.cycle}_shapes_simplified.json"
+            shapes_path: str = rdb.path_to_file([shared_data_dir, xx]) + shapes_name
 
-            graph_path: str = rdd.path_to_file([shared_data_dir, xx]) + rdd.file_name(
-                [xx, rdd.cycle, "graph"], "_", "json"
+            graph_path: str = rdb.path_to_file([shared_data_dir, xx]) + rdb.file_name(
+                [xx, rdb.cycle, "graph"], "_", "json"
             )
 
             ### BOILERPLATE - DON'T CHANGE THIS ###
@@ -47,11 +47,11 @@ class TestScorecard:
 
             #
 
-            expected_path: str = f"{rdd.testdata_dir}/{xx}_DRA_scorecard.json"
-            expected: Dict[str, Any] = rdd.read_json(expected_path)
+            expected_path: str = f"{rdb.testdata_dir}/{xx}_DRA_scorecard.json"
+            expected: Dict[str, Any] = rdb.read_json(expected_path)
 
-            decimals_path: str = f"{rdd.testdata_dir}/expected_decimal_places.json"
-            approx_floats: Dict[str, int] = rdd.read_json(decimals_path)
+            decimals_path: str = f"{rdb.testdata_dir}/expected_decimal_places.json"
+            approx_floats: Dict[str, int] = rdb.read_json(decimals_path)
             exact_ints: List[str] = [
                 "pr_seats",
                 "proportional_opportunities",
@@ -80,11 +80,11 @@ class TestScorecard:
     def test_compactness(self) -> None:
         for xx in ["NC", "NJ"]:
             profile_path = f"testdata/{xx}_root_profile.json"
-            profile: Dict[str, Any] = rdd.read_json(profile_path)
+            profile: Dict[str, Any] = rdb.read_json(profile_path)
             implicit_district_props: List[Dict[str, float]] = profile["shapes"]
 
-            scorecard_path: str = f"{rdd.testdata_dir}/{xx}_DRA_scorecard.json"
-            expected: Dict[str, Any] = rdd.read_json(scorecard_path)
+            scorecard_path: str = f"{rdb.testdata_dir}/{xx}_DRA_scorecard.json"
+            expected: Dict[str, Any] = rdb.read_json(scorecard_path)
 
             #
 

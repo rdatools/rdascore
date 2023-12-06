@@ -19,7 +19,7 @@ from argparse import ArgumentParser, Namespace
 import os
 from typing import Any, List, Dict, Generator
 
-import rdadata as rdd
+import rdabase as rdb
 from rdascore import (
     load_data,
     load_shapes,
@@ -59,17 +59,17 @@ def main() -> None:
 
     ### PATHS TO FILES ###
 
-    data_project: str = "../rdadata"
+    data_project: str = "../rdabase"
     shared_data_dir: str = f"{data_project}/data/"
 
-    data_path: str = rdd.path_to_file([shared_data_dir, xx]) + rdd.file_name(
-        [xx, rdd.cycle, "data"], "_", "csv"
+    data_path: str = rdb.path_to_file([shared_data_dir, xx]) + rdb.file_name(
+        [xx, rdb.cycle, "data"], "_", "csv"
     )
-    shapes_name: str = f"{xx}_{rdd.cycle}_shapes_simplified.json"
-    shapes_path: str = rdd.path_to_file([shared_data_dir, xx]) + shapes_name
+    shapes_name: str = f"{xx}_{rdb.cycle}_shapes_simplified.json"
+    shapes_path: str = rdb.path_to_file([shared_data_dir, xx]) + shapes_name
 
-    graph_path: str = rdd.path_to_file([shared_data_dir, xx]) + rdd.file_name(
-        [xx, rdd.cycle, "graph"], "_", "json"
+    graph_path: str = rdb.path_to_file([shared_data_dir, xx]) + rdb.file_name(
+        [xx, rdb.cycle, "graph"], "_", "json"
     )
 
     ### BOILERPLATE - DON'T CHANGE THIS ###
