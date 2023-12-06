@@ -19,7 +19,7 @@ class TestScorecard:
     def test_scorecard(self) -> None:
         for xx in ["NC", "NJ"]:
             plan_path: str = f"sample/{xx}20C_baseline_100.csv"
-            plan: List[Dict[str, str | int]] = load_plan(plan_path)
+            plan: List[Assignment] = load_plan(plan_path)
 
             data_project: str = "../rdabase"
             shared_data_dir: str = f"{data_project}/data/"

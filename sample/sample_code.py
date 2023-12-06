@@ -12,7 +12,6 @@ $ sample/sample_code.py
 import os
 from typing import Any, List, Dict
 
-# import rdabase as rdb
 from rdabase import Assignment, path_to_file, file_name, cycle
 from rdascore import (
     load_data,
