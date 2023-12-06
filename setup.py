@@ -28,11 +28,9 @@ setup(
         "rdascore",
     ],
     install_requires=[
-        "fiona",
         "pytest",
         "rdadata",
         "rdapy",
-        "shapely",
     ],
     zip_safe=False,
 )
