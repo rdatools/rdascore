@@ -1,4 +1,4 @@
-# rdafn
+# rdascore
 
 Compute Dave's Redistricting (DRA) analytics for an ensemble of redistricting plans.
 
@@ -7,7 +7,7 @@ Compute Dave's Redistricting (DRA) analytics for an ensemble of redistricting pl
 I've converted this into a pip installable package:
 
 ```bash
-$ pip install rdafn
+$ pip install rdascore
 ```
 
 As noted next, you probably also want to clone the companion [rdadata](https://github.com/alecramsay/rdadata) repository.

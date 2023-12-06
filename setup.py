@@ -12,20 +12,20 @@ $ python3 -m pip install --upgrade twine
 Each iteration:
 
 $ python3 -m build
-$ python3 -m twine upload --repository pypi dist/rdafn-x.y.z*.*
+$ python3 -m twine upload --repository pypi dist/rdascore-x.y.z*.*
 
 """
 
 setup(
-    name="rdafn",
+    name="rdascore",
     version="1.2.0",
     description="Redistricting analytics for scoring ensembles of redistricting plans",
-    url="https://github.com/dra2020/rdafn",
+    url="https://github.com/dra2020/rdascore",
     author="alecramsay",
     author_email="a73cram5ay@gmail.com",
     license="MIT",
     packages=[
-        "rdafn",
+        "rdascore",
     ],
     install_requires=[
         "fiona",

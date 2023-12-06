@@ -1,4 +1,4 @@
-# rdafn/__init__.py
+# rdascore/__init__.py
 
 from .load import (
     load_plan,
@@ -13,4 +13,4 @@ from .analyze import (
     calc_compactness_metrics,
 )
 
-name: str = "rdafn"
+name: str = "rdascore"

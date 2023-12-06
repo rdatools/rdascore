@@ -13,7 +13,7 @@ import os
 from typing import Any, List, Dict
 
 import rdadata as rdd
-from rdafn import (
+from rdascore import (
     load_data,
     load_shapes,
     load_graph,

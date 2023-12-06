@@ -7,8 +7,8 @@ from typing import Any, Dict, List
 import rdadata as rdd
 import rdapy as rda
 
-from rdafn.load import *
-from rdafn.analyze import (
+from rdascore.load import *
+from rdascore.analyze import (
     analyze_plan,
     calc_compactness_metrics,
 )

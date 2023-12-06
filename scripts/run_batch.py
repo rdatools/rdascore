@@ -14,7 +14,7 @@ import os
 from typing import List
 
 from rdadata import data_dir
-from rdafn import *
+from rdascore import *
 
 states: List[str] = [
     "SC",
