@@ -12,7 +12,8 @@ $ sample/sample_code.py
 import os
 from typing import Any, List, Dict
 
-import rdabase as rdb
+# import rdabase as rdb
+from rdabase import Assignment, path_to_file, file_name, cycle
 from rdascore import (
     load_data,
     load_shapes,
@@ -32,14 +33,14 @@ data_project: str = "../rdabase"
 shared_data_dir: str = f"{data_project}/data/"
 sample_dir: str = "sample"
 
-data_path: str = rdb.path_to_file([shared_data_dir, xx]) + rdb.file_name(
-    [xx, rdb.cycle, "data"], "_", "csv"
+data_path: str = path_to_file([shared_data_dir, xx]) + file_name(
+    [xx, cycle, "data"], "_", "csv"
 )
-shapes_name: str = f"{xx}_{rdb.cycle}_shapes_simplified.json"
-shapes_path: str = rdb.path_to_file([shared_data_dir, xx]) + shapes_name
+shapes_name: str = f"{xx}_{cycle}_shapes_simplified.json"
+shapes_path: str = path_to_file([shared_data_dir, xx]) + shapes_name
 
-graph_path: str = rdb.path_to_file([shared_data_dir, xx]) + rdb.file_name(
-    [xx, rdb.cycle, "graph"], "_", "json"
+graph_path: str = path_to_file([shared_data_dir, xx]) + file_name(
+    [xx, cycle, "graph"], "_", "json"
 )
 
 ### AN ENSEMBLE OF PLAN CSV FILES ON DISK ###
@@ -63,7 +64,7 @@ metadata: Dict[str, Any] = load_metadata(xx, data_path)
 
 for plan_path in ensemble:
     try:
-        assignments: List[Dict[str, str | int]] = load_plan(plan_path)
+        assignments: List[Assignment] = load_plan(plan_path)
 
         scorecard: Dict[str, Any] = analyze_plan(
             assignments,

@@ -3,11 +3,10 @@ ANALYZE A PLAN
 """
 
 from collections import defaultdict
-from typing import Any, List, Dict, Tuple, Set
+from typing import Any, List, Dict
 
 import rdapy as rda
-from rdabase import census_fields, election_fields, GeoID, OUT_OF_STATE
-from typing import Any, List, Dict
+from rdabase import census_fields, election_fields, GeoID, OUT_OF_STATE, Assignment
 
 ### FIELD NAMES ###
 
@@ -29,7 +28,7 @@ dem_votes_field: str = election_fields[2]
 
 # @time_function
 def analyze_plan(
-    assignments: List[Dict[str, str | int]],
+    assignments: List[Assignment],
     data: Dict[str, Dict[str, str | int]],
     shapes: Dict[str, Any],
     graph: Dict[str, List[str]],
@@ -40,7 +39,7 @@ def analyze_plan(
     n_districts: int = metadata["D"]
     n_counties: int = metadata["C"]
     county_to_index: Dict[str, int] = metadata["county_to_index"]
-    district_to_index: Dict[int, int] = metadata["district_to_index"]
+    district_to_index: Dict[int | str, int] = metadata["district_to_index"]
 
     ### AGGREGATE DATA & SHAPES BY DISTRICT ###
 
@@ -124,22 +123,22 @@ def analyze_plan(
 
 
 def aggregate_data_by_district(
-    assignments: List[Dict[str, str | int]],
+    assignments: List[Assignment],
     data: Dict[str, Dict[str, str | int]],
     n_districts: int,
     n_counties: int,
     county_to_index: Dict[str, int],
-    district_to_index: Dict[int, int],
+    district_to_index: Dict[int | str, int],
 ) -> Dict[str, Any]:
     """Aggregate census & election data by district."""
 
     total_pop: int = 0
-    pop_by_district: defaultdict[int, int] = defaultdict(int)
+    pop_by_district: defaultdict[int | str, int] = defaultdict(int)
 
     total_votes: int = 0
     total_d_votes: int = 0
-    d_by_district: Dict[int, int] = defaultdict(int)
-    tot_by_district: Dict[int, int] = defaultdict(int)
+    d_by_district: Dict[int | str, int] = defaultdict(int)
+    tot_by_district: Dict[int | str, int] = defaultdict(int)
     # d_by_district: defaultdict[int, int] = defaultdict(int)
     # tot_by_district: defaultdict[int, int] = defaultdict(int)
 
@@ -150,40 +149,38 @@ def aggregate_data_by_district(
 
     CxD: List[List[float]] = [[0.0] * n_counties for _ in range(n_districts)]
 
-    for row in assignments:
-        precinct: str = str(row["GEOID"] if "GEOID" in row else row["GEOID20"])
-        district: int = int(row["DISTRICT"] if "DISTRICT" in row else row["District"])
-
+    for a in assignments:
         # For population deviation
 
-        pop: int = int(data[precinct][total_pop_field])
-        pop_by_district[district] += pop
+        pop: int = int(data[a.geoid][total_pop_field])
+        pop_by_district[a.district] += pop
         total_pop += pop
 
         # For partisan metrics
 
-        d: int = int(data[precinct][dem_votes_field])
-        tot: int = int(data[precinct][dem_votes_field]) + int(
-            data[precinct][rep_votes_field]
+        d: int = int(data[a.geoid][dem_votes_field])
+        tot: int = int(data[a.geoid][dem_votes_field]) + int(
+            data[a.geoid][rep_votes_field]
         )  # NOTE - Two-party vote total
 
-        d_by_district[district] += d
+        d_by_district[a.district] += d
         total_d_votes += d
 
-        tot_by_district[district] += tot
+        tot_by_district[a.district] += tot
         total_votes += tot
 
         # For minority opportunity metrics
 
         for demo in census_fields[1:]:  # Everything except total population
-            demos_totals[demo] += int(data[precinct][demo])
-            demos_by_district[district][demo] += int(data[precinct][demo])
+            demos_totals[demo] += int(data[a.geoid][demo])
+            assert a.district is int  # NOTE - Generalize this for str districts
+            demos_by_district[a.district][demo] += int(data[a.geoid][demo])
 
         # For county-district splitting
 
-        county: str = GeoID(precinct).county[2:]
+        county: str = GeoID(a.geoid).county[2:]
 
-        i: int = district_to_index[district]
+        i: int = district_to_index[a.district]
         j: int = county_to_index[county]
 
         CxD[i][j] += pop
@@ -205,8 +202,8 @@ def aggregate_data_by_district(
 
 def border_length(
     geoid: str,
-    district: int,
-    district_by_geoid: Dict[str, int],
+    district: int | str,
+    district_by_geoid: Dict[str, int | str],
     shapes: Dict[str, Any],
     graph: Dict[str, List[str]],
 ) -> float:
@@ -225,7 +222,7 @@ def border_length(
 
 
 def aggregate_shapes_by_district(
-    assignments: List[Dict[str, str | int]],
+    assignments: List[Assignment],
     shapes: Dict[str, Any],
     graph: Dict[str, List[str]],
     n_districts: int,
@@ -235,16 +232,13 @@ def aggregate_shapes_by_district(
     # Normalize the assignments & index districts by precinct
 
     plan: List[Dict] = list()
-    district_by_geoid: Dict[str, int] = dict()
+    district_by_geoid: Dict[str, int | str] = dict()
     geoid_field: str = "GEOID" if "GEOID" in assignments[0] else "GEOID20"
     district_field: str = "DISTRICT" if "DISTRICT" in assignments[0] else "District"
 
-    for row in assignments:
-        precinct: str = str(row[geoid_field])
-        district: int = int(row[district_field])
-
-        plan.append({geoid_field: precinct, district_field: district})
-        district_by_geoid[precinct] = district
+    for a in assignments:
+        plan.append({geoid_field: a.geoid, district_field: a.district})
+        district_by_geoid[a.geoid] = a.district
 
     # Set up aggregates
 

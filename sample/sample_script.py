@@ -19,7 +19,7 @@ from argparse import ArgumentParser, Namespace
 import os
 from typing import Any, List, Dict, Generator
 
-import rdabase as rdb
+from rdabase import Assignment, path_to_file, file_name, cycle
 from rdascore import (
     load_data,
     load_shapes,
@@ -35,11 +35,11 @@ from rdascore import (
 
 def plans_from_ensemble(
     xx: str, ensemble_path: str
-) -> Generator[List[Dict[str, str | int]], None, None]:
+) -> Generator[List[Assignment], None, None]:
     """Return plans (assignments) one at a time from an ensemble file"""
 
     # Replace this with code that reads an ensemble file and returns plans one at a time
-    ensemble: List[List[Dict[str, str | int]]] = [
+    ensemble: List[List[Assignment]] = [
         load_plan(os.path.expanduser("sample/") + f"{xx}20C_baseline_100.csv")
     ]
 
@@ -62,14 +62,14 @@ def main() -> None:
     data_project: str = "../rdabase"
     shared_data_dir: str = f"{data_project}/data/"
 
-    data_path: str = rdb.path_to_file([shared_data_dir, xx]) + rdb.file_name(
-        [xx, rdb.cycle, "data"], "_", "csv"
+    data_path: str = path_to_file([shared_data_dir, xx]) + file_name(
+        [xx, cycle, "data"], "_", "csv"
     )
-    shapes_name: str = f"{xx}_{rdb.cycle}_shapes_simplified.json"
-    shapes_path: str = rdb.path_to_file([shared_data_dir, xx]) + shapes_name
+    shapes_name: str = f"{xx}_{cycle}_shapes_simplified.json"
+    shapes_path: str = path_to_file([shared_data_dir, xx]) + shapes_name
 
-    graph_path: str = rdb.path_to_file([shared_data_dir, xx]) + rdb.file_name(
-        [xx, rdb.cycle, "graph"], "_", "json"
+    graph_path: str = path_to_file([shared_data_dir, xx]) + file_name(
+        [xx, cycle, "graph"], "_", "json"
     )
 
     ### BOILERPLATE - DON'T CHANGE THIS ###
