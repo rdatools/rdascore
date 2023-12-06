@@ -173,8 +173,8 @@ def aggregate_data_by_district(
 
         for demo in census_fields[1:]:  # Everything except total population
             demos_totals[demo] += int(data[a.geoid][demo])
-            assert a.district is int  # NOTE - Generalize this for str districts
-            demos_by_district[a.district][demo] += int(data[a.geoid][demo])
+            # NOTE - Generalize for str districts
+            demos_by_district[int(a.district)][demo] += int(data[a.geoid][demo])
 
         # For county-district splitting
 
