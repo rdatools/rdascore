@@ -18,7 +18,7 @@ $ python3 -m twine upload --repository pypi dist/rdascore-x.y.z*.*
 
 setup(
     name="rdascore",
-    version="2.0.4",
+    version="2.0.5",
     description="Redistricting analytics for scoring ensembles of redistricting plans",
     url="https://github.com/dra2020/rdascore",
     author="alecramsay",
