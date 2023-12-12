@@ -20,7 +20,7 @@ setup(
     name="rdascore",
     version="2.0.5",
     description="Redistricting analytics for scoring ensembles of redistricting plans",
-    url="https://github.com/dra2020/rdascore",
+    url="https://github.com/rdatools/rdascore",
     author="alecramsay",
     author_email="a73cram5ay@gmail.com",
     license="MIT",
@@ -28,7 +28,6 @@ setup(
         "rdascore",
     ],
     install_requires=[
-        "pytest",
         "rdabase",
         "rdapy",
     ],

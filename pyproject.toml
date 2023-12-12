@@ -19,5 +19,5 @@ classifiers = [
 dynamic = ["license", "dependencies"]
 
 [project.urls]
-"Homepage" = "https://github.com/dra2020/rdascore"
-"Bug Tracker" = "https://github.com/dra2020/rdascore/issues"
+"Homepage" = "https://github.com/rdatools/rdascore"
+"Bug Tracker" = "https://github.com/rdatools/rdabase/issues"
