@@ -4,7 +4,14 @@ Compute Dave's Redistricting (DRA) analytics for an ensemble of redistricting pl
 
 ## Installation
 
-I've converted this into a pip installable package:
+To clone the repository:
+
+```bash
+$ git clone https://github.com/alecramsay/rdascore
+$ cd rdascore
+```
+
+To install the package:
 
 ```bash
 $ pip install rdascore
