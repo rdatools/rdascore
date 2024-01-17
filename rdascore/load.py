@@ -11,6 +11,7 @@ from rdabase import (
     COUNTIES_BY_STATE,
     DISTRICTS_BY_STATE,
     Assignment,
+    load_plan,
 )
 
 
@@ -70,18 +71,6 @@ def load_metadata(xx: str, data_path: str) -> Dict[str, Any]:
     metadata["district_to_index"] = district_to_index
 
     return metadata
-
-
-def load_plan(plan_file: str) -> List[Assignment]:
-    """Read a precinct-assignment file."""
-
-    raw_assignments: List[Dict[str, str | int]] = read_csv(plan_file, [str, int])
-    assignments: List[Assignment] = [
-        Assignment(geoid=str(p["GEOID"]), district=p["DISTRICT"])
-        for p in raw_assignments
-    ]
-
-    return assignments
 
 
 ### END ###

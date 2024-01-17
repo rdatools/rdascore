@@ -5,6 +5,8 @@ TEST SAMPLE SCORECARDS
 from typing import Any, Dict, List
 
 from rdabase import (
+    Assignment,
+    load_plan,
     path_to_file,
     file_name,
     cycle,
@@ -13,7 +15,7 @@ from rdabase import (
     approx_equal,
 )
 
-from rdascore.load import *
+from rdascore.load import load_data, load_shapes, load_graph, load_metadata
 from rdascore.analyze import (
     analyze_plan,
     calc_compactness_metrics,
