@@ -1,12 +1,5 @@
 # rdascore/__init__.py
 
-from .load import (
-    # load_plan, # NOTE - Now in rdabase
-    load_data,
-    load_shapes,
-    load_graph,
-    load_metadata,
-)
 from .analyze import (
     analyze_plan,
     aggregate_data_by_district,
