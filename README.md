@@ -50,10 +50,8 @@ With four exceptions, `analyze_plan()` computes all the analytics that DRA does:
     a congressional plan for North Carolina &#8212; calculating *all* the analytics &#8212; takes a small fraction
     of a second.
 -   Finally, we've already created the precinct contiguity graphs as part of finding root map candidates
-    in my [baseline](https://github.com/alecramsay/baseline) GitHub repo,
-    and we're also already using the graph in Todd's [ensembles](https://github.com/proebsting/ensembles) repo
-    to support generating spanning trees.
-    So, by definition, the plans in our ensembles are contiguous.
+    in our [rdaroot](https://github.com/rdatools/rdaroot) GitHub repo, and,
+    by definition, the plans in our ensembles are contiguous.
     Hence, we don't check that.
 
 ## Testing
