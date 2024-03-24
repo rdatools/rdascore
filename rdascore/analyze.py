@@ -3,7 +3,7 @@ ANALYZE A PLAN
 """
 
 from collections import defaultdict
-from typing import Any, List, Dict
+from typing import Any, List, Dict, Optional
 
 import rdapy as rda
 from rdabase import census_fields, election_fields, GeoID, OUT_OF_STATE, Assignment
@@ -55,7 +55,7 @@ def analyze_plan(
     deviation: float = calc_population_deviation(
         aggregates["pop_by_district"], aggregates["total_pop"], n_districts
     )
-    partisan_metrics: Dict[str, float] = calc_partisan_metrics(
+    partisan_metrics: Dict[str, Optional[float]] = calc_partisan_metrics(
         aggregates["total_d_votes"],
         aggregates["total_votes"],
         aggregates["d_by_district"],
@@ -297,10 +297,10 @@ def calc_partisan_metrics(
     total_votes: int,
     d_by_district: Dict[int, int],
     tot_by_district: Dict[int, int],
-) -> Dict[str, float]:
+) -> Dict[str, Optional[float]]:
     """Calulate partisan metrics."""
 
-    partisan_metrics: Dict[str, float] = dict()
+    partisan_metrics: Dict[str, Optional[float]] = dict()
 
     Vf: float = total_d_votes / total_votes
     Vf_array: List[float] = [
@@ -338,19 +338,14 @@ def calc_partisan_metrics(
     partisan_metrics["responsiveness"] = all_results["responsiveness"]["littleR"]
     partisan_metrics["responsive_districts"] = all_results["responsiveness"]["rD"]
     partisan_metrics["responsive_district_pct"] = all_results["responsiveness"]["rDf"]
-    partisan_metrics["overall_responsiveness"] = all_results["responsiveness"][
-        "bigR"
-    ]  # BIG 'R': Defined in Footnote 22 on P. 10
-    # partisan_metrics["minimal_inverse_responsiveness"] = all_results[
-    #     "responsiveness"
-    # ][
-    #     "mIR"
-    # ]  # zeta = (1 / r) - (1 / r_sub_max) : Eq. 5.2.1
+    partisan_metrics["overall_responsiveness"] = all_results["responsiveness"]["bigR"]
 
     partisan_metrics["avg_dem_win_pct"] = all_results["averageDVf"]
     partisan_metrics["avg_rep_win_pct"] = (
         1.0 - all_results["averageRVf"]
-    )  # Invert the D % to get the R %.
+        if all_results["averageRVf"] is not None
+        else None
+    )
 
     return partisan_metrics
 
