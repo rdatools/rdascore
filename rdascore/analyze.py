@@ -113,6 +113,8 @@ def analyze_plan(
         "splitting",
     ]
     for metric in scorecard:
+        if scorecard[metric] is None:
+            continue
         if metric not in int_metrics:
             scorecard[metric] = round(scorecard[metric], precision)
 
