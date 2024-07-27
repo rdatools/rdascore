@@ -33,6 +33,7 @@ def analyze_plan(
     shapes: Dict[str, Any],
     graph: Dict[str, List[str]],
     metadata: Dict[str, Any],
+    alt_minority: bool = False,  # If True, add an alternative minority opportunity rating
 ) -> Dict[str, Any]:
     """Analyze a plan."""
 
@@ -96,6 +97,7 @@ def analyze_plan(
             n_counties,
             n_districts,
         ),
+        alt_minority=alt_minority,
     )
     scorecard.update(ratings)
 
@@ -109,6 +111,7 @@ def analyze_plan(
         "proportionality",
         "competitiveness",
         "minority",
+        "minority_alt",
         "compactness",
         "splitting",
     ]
@@ -429,6 +432,7 @@ def rate_dimensions(
     minority: tuple,
     compactness: tuple,
     splitting: tuple,
+    alt_minority: bool = False,
 ) -> Dict[str, int]:
     """Rate the dimensions of a plan."""
 
@@ -457,7 +461,24 @@ def rate_dimensions(
     )
     ratings["splitting"] = rda.rate_splitting(county_rating, district_rating)
 
+    # Calc minority opportunity ONLY, i.e., not also coalition districts like DRA does
+    if alt_minority:
+        ratings["minority_alt"] = rate_minority_opportunity_alt(od, pod, cd, pcd)
+
     return ratings
+
+
+def rate_minority_opportunity_alt(od: float, pod: float, cd: float, pcd: float) -> int:
+    """
+    Rate minority opportunity ONLY, i.e., not also coalition districts like DRA does.
+    See rda.rate_minority_opportunity for the DRA version.
+    """
+
+    opportunity_score: int = round((min(od, pod) / pod) * 100) if (pod > 0) else 0
+
+    rating: int = max(min(100, opportunity_score), 0)
+
+    return rating
 
 
 ### END ###
