@@ -406,12 +406,10 @@ def calc_minority_metrics_alt(
     n_districts: int,
 ) -> Dict[str, Dict[str, float]]:
     """
-    Calculate minority metrics by demographic for usen in alternative opportunity-district-only minority ratings,
-    i.e., does not include coalition districts, that uses standard (unshifted) seat probabilities.
-
-    for each minority demographic:
-    - Pd = round(demo_VAP / tot_VAP)
-    - Od = sum of p(demo_VAP / district_VAP), for ea. district using seat probability p
+    Calculate minority metrics for alternative minority ratings:
+    - Ignore potential coalition districts
+    - DO shifts VAP %'s up, but
+    - Don't apply an arbitrary cutoff (on the low end)
     """
 
     # Gather the minority demographics
@@ -421,14 +419,19 @@ def calc_minority_metrics_alt(
     # Compute proportional #'s of seats, based on statewide VAP shares
     demo_Pd: Dict[str, float] = dict()
     for k, v in demos.items():
-        demo_Pd[v] = round(demos_totals[k] / demos_totals[total_vap_field])
+        vap_pct: float = demos_totals[k] / demos_totals[total_vap_field]
+        Pd: float = round(vap_pct * n_districts)
+        demo_Pd[v] = Pd
 
-    # Estimate # of opportunity districts for each minority demographic,
-    # using standard (unshifted) seat probabilities
+    # Estimate # of opportunity districts for each minority demographic
+    black_shift: float = 0.15  # For Black VAP %
     demo_Od: Dict[str, float] = dict(zip(demos.values(), [0.0] * len(demos)))
     for i in range(1, n_districts + 1):
         for k, v in demos.items():
-            Vf: float = demos_by_district[i][k] / demos_by_district[i][total_vap_field]
+            shift: float = black_shift if v == "black" else black_shift / 2
+            Vf: float = (
+                demos_by_district[i][k] / demos_by_district[i][total_vap_field]
+            ) + shift
             Od: float = rda.est_seat_probability(Vf)
 
             demo_Od[v] += Od
@@ -529,24 +532,42 @@ def rate_minority_opportunity_alt(
     demos: Dict[str, str] = {x: x.split("_")[0].lower() for x in census_fields[3:-1]}
 
     # Rate the alternative minority opportunity as the percentage of proportional districts
-    demo_ratings: Dict[str, int] = dict()
-    for k, v in demos.items():
-        Od: float = minority_metrics["opportunity_districts"][v]
-        Pd: float = minority_metrics["proportional_districts"][v]
-        demo_ratings[v] = max(min(round((Od / Pd) * 100), 100), 0) if Pd > 0 else 0
+    Od: float = sum(minority_metrics["opportunity_districts"].values())
+    Pd: float = sum(minority_metrics["proportional_districts"].values())
 
-    # Calculate the alternative minority opportunity rating as the weighted average
-    # of the single demographic ratings
-    minority_vap: int = demos_totals[census_fields[8]]
-    working: float = 0.0
-    for k, v in demos.items():
-        rating: int = demo_ratings[v]
-        weight: float = demos_totals[k] / minority_vap
-        working += rating * (demos_totals[k] / minority_vap)
-
-    alt_minority_rating: int = max(min(round(working), 100), 0)
+    alt_minority_rating: int = max(min(round((Od / Pd) * 100), 100), 0)
 
     return alt_minority_rating
 
+
+# TODO - DELETE
+# def rate_minority_opportunity_alt(
+#     demos_totals: Dict[str, int],
+#     minority_metrics: Dict[str, Dict[str, float]],
+# ) -> int:
+
+#     # Gather the minority demographics
+#     # Skip total population, total VAP, white VAP, minority VAP
+#     demos: Dict[str, str] = {x: x.split("_")[0].lower() for x in census_fields[3:-1]}
+
+#     # Rate the alternative minority opportunity as the percentage of proportional districts
+#     demo_ratings: Dict[str, int] = dict()
+#     for k, v in demos.items():
+#         Od: float = minority_metrics["opportunity_districts"][v]
+#         Pd: float = minority_metrics["proportional_districts"][v]
+#         demo_ratings[v] = max(min(round((Od / Pd) * 100), 100), 0) if Pd > 0 else 0
+
+#     # Calculate the alternative minority opportunity rating as the weighted average
+#     # of the single demographic ratings
+#     minority_vap: int = demos_totals[census_fields[8]]
+#     working: float = 0.0
+#     for k, v in demos.items():
+#         rating: int = demo_ratings[v]
+#         weight: float = demos_totals[k] / minority_vap
+#         working += rating * weight
+
+#     alt_minority_rating: int = max(min(round(working), 100), 0)
+
+#     return alt_minority_rating
 
 ### END ###
