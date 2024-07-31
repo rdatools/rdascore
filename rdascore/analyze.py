@@ -68,12 +68,10 @@ def analyze_plan(
     compactness_metrics: Dict[str, float] = calc_compactness_metrics(district_props)
     splitting_metrics: Dict[str, float] = calc_splitting_metrics(aggregates["CxD"])
 
-    # Prep inputs for alt. minority ratings
+    # Prep inputs for alternate minority ratings
     if alt_minority:
-        alt_minority_metrics: Dict[str, Dict[str, float]] = calc_minority_metrics_alt(
-            aggregates["demos_totals"],
-            aggregates["demos_by_district"],
-            n_districts,
+        alt_minority_metrics: Dict[str, float] = calc_alt_minority_metrics(
+            aggregates["demos_totals"], aggregates["demos_by_district"], n_districts
         )
 
     scorecard: Dict[str, Any] = dict()
@@ -108,11 +106,12 @@ def analyze_plan(
     )
 
     if alt_minority:
-        alt_minority_rating: int = rate_minority_opportunity_alt(
-            aggregates["demos_totals"],
-            alt_minority_metrics,
+        ratings["minority_alt"] = rda.rate_minority_opportunity(
+            alt_minority_metrics["opportunity_districts"],
+            alt_minority_metrics["proportional_opportunities"],
+            alt_minority_metrics["coalition_districts"],
+            alt_minority_metrics["proportional_coalitions"],
         )
-        ratings["minority_alt"] = alt_minority_rating
 
     scorecard.update(ratings)
 
@@ -400,46 +399,118 @@ def calc_minority_metrics(
     return minority_metrics
 
 
-def calc_minority_metrics_alt(
+# NOTE - This is a slightly modified clone of est_minority_opportunity in rdapy.
+def est_alt_minority_opportunity(mf: float, demo: Optional[str] = None) -> float:
+    """Estimate the ALTERNATE opportunity for a minority representation.
+
+    NOTE - Shift minority proportions up, so 37% minority scores like 52% share,
+      but use the uncompressed seat probability distribution. This makes a 37%
+      district have a ~70% chance of winning, and a 50% district have a >99% chance.
+      Below 37 % has no chance.
+    NOTE - Sam Wang suggest 90% probability for a 37% district. That seems a little
+      too abrupt and all or nothing, so I backed off to the ~70%.
+    """
+
+    assert mf >= 0.0
+
+    range: list[float] = [0.37, 0.50]
+
+    shift: float = 0.15  # For Black VAP % (and Minority)
+    dilution: float = 0.50  # For other demos, dilute the Black shift by half
+    if demo and (demo not in ["black", "minority"]):
+        shift *= dilution
+
+    wip_num: float = mf + shift
+    oppty: float = (
+        # NOTE - This is the one-line change from est_minority_opportunity in rdapy,
+        # i.e., don't clip VAP % below 37%.
+        max(min(rda.est_seat_probability(wip_num), 1.0), 0.0)
+        # 0.0 if (mf < range[0]) else min(rda.est_seat_probability(wip_num), 1.0)
+    )
+
+    return oppty
+
+
+# NOTE - This is a clone of calc_minority_opportunity in rdapy that uses
+# and slightly modified est_alt_minority_opportunity above instead.
+def calc_alt_minority_opportunity(
+    statewide_demos: dict[str, float], demos_by_district: list[dict[str, float]]
+) -> dict[str, float]:
+    """Estimate ALTERNATE minority opportunity (everything except the table which is used in DRA)."""
+
+    n_districts: int = len(demos_by_district)
+
+    # Determine statewide proportional minority districts by single demographics (ignoring'White')
+    districts_by_demo: dict[str, int] = {
+        x: rda.calc_proportional_districts(statewide_demos[x], n_districts)
+        for x in rda.DEMOGRAPHICS[1:]
+    }
+
+    # Sum the statewide proportional districts for each single demographic
+    total_proportional: int = sum(
+        [v for k, v in districts_by_demo.items() if k not in ["white", "minority"]]
+    )
+
+    # Sum the opportunities for minority represention in each district
+    oppty_by_demo: dict[str, float] = defaultdict(float)
+    for district in demos_by_district:
+        for d in rda.DEMOGRAPHICS[1:]:  # Ignore 'white'
+            # NOTE - Use the est_alt_minority_opportunity above, instead of est_minority_opportunity in rdapy.
+            oppty_by_demo[d] += est_alt_minority_opportunity(district[d], d)
+
+    # The # of opportunity districts for each separate demographic and all minorities
+    od: float = sum(
+        [v for k, v in oppty_by_demo.items() if k not in ["white", "minority"]]
+    )
+    cd: float = oppty_by_demo["minority"]
+
+    # The # of proportional districts for each separate demographic and all minorities
+    pod: float = total_proportional
+    pcd: float = districts_by_demo["minority"]  # TODO - Fix this. Fix what?
+
+    results: dict[str, float] = {
+        # "pivot_by_demographic": table, # For this, use dra-analytics instead
+        "opportunity_districts": od,
+        "proportional_opportunities": pod,
+        "coalition_districts": cd,
+        "proportional_coalitions": pcd,
+        # "details": {} # None
+    }
+
+    return results
+
+
+# NOTE - This is a clone of calc_minority_metrics that uses calc_alt_minority_opportunity above,
+# instead of calc_minority_opportunity in rdapy.
+def calc_alt_minority_metrics(
     demos_totals: Dict[str, int],
     demos_by_district: List[Dict[str, int]],
     n_districts: int,
-) -> Dict[str, Dict[str, float]]:
-    """
-    Calculate minority metrics for alternative minority ratings:
-    - Ignore potential coalition districts
-    - DO shifts VAP %'s up, but
-    - Don't apply an arbitrary cutoff (on the low end)
-    """
+) -> Dict[str, float]:
+    """Calculate alternate minority metrics."""
 
-    # Gather the minority demographics
-    # Skip total population, total VAP, white VAP, minority VAP
-    demos: Dict[str, str] = {x: x.split("_")[0].lower() for x in census_fields[3:-1]}
+    statewide_demos: Dict[str, float] = dict()
+    for demo in census_fields[2:]:  # Skip total population & total VAP
+        simple_demo: str = demo.split("_")[0].lower()
+        statewide_demos[simple_demo] = (
+            demos_totals[demo] / demos_totals[total_vap_field]
+        )
 
-    # Compute proportional #'s of seats, based on statewide VAP shares
-    demo_Pd: Dict[str, float] = dict()
-    for k, v in demos.items():
-        vap_pct: float = demos_totals[k] / demos_totals[total_vap_field]
-        Pd: float = round(vap_pct * n_districts)
-        demo_Pd[v] = Pd
-
-    # Estimate # of opportunity districts for each minority demographic
-    black_shift: float = 0.15  # For Black VAP %
-    demo_Od: Dict[str, float] = dict(zip(demos.values(), [0.0] * len(demos)))
+    by_district: List[Dict[str, float]] = list()
     for i in range(1, n_districts + 1):
-        for k, v in demos.items():
-            shift: float = black_shift if v == "black" else black_shift / 2
-            Vf: float = (
-                demos_by_district[i][k] / demos_by_district[i][total_vap_field]
-            ) + shift
-            Od: float = rda.est_seat_probability(Vf)
+        district_demos: Dict[str, float] = dict()
+        for demo in census_fields[2:]:  # Skip total population & total VAP
+            simple_demo: str = demo.split("_")[0].lower()
+            district_demos[simple_demo] = (
+                demos_by_district[i][demo] / demos_by_district[i][total_vap_field]
+            )
 
-            demo_Od[v] += Od
+        by_district.append(district_demos)
 
-    minority_metrics: Dict[str, Dict[str, float]] = {
-        "opportunity_districts": demo_Od,
-        "proportional_districts": demo_Pd,
-    }
+    # NOTE - Calc alternative minority metrics
+    minority_metrics: Dict[str, float] = calc_alt_minority_opportunity(
+        statewide_demos, by_district
+    )
 
     return minority_metrics
 
@@ -521,53 +592,5 @@ def rate_dimensions(
 
     return ratings
 
-
-def rate_minority_opportunity_alt(
-    demos_totals: Dict[str, int],
-    minority_metrics: Dict[str, Dict[str, float]],
-) -> int:
-
-    # Gather the minority demographics
-    # Skip total population, total VAP, white VAP, minority VAP
-    demos: Dict[str, str] = {x: x.split("_")[0].lower() for x in census_fields[3:-1]}
-
-    # Rate the alternative minority opportunity as the percentage of proportional districts
-    Od: float = sum(minority_metrics["opportunity_districts"].values())
-    Pd: float = sum(minority_metrics["proportional_districts"].values())
-
-    alt_minority_rating: int = max(min(round((Od / Pd) * 100), 100), 0)
-
-    return alt_minority_rating
-
-
-# TODO - DELETE
-# def rate_minority_opportunity_alt(
-#     demos_totals: Dict[str, int],
-#     minority_metrics: Dict[str, Dict[str, float]],
-# ) -> int:
-
-#     # Gather the minority demographics
-#     # Skip total population, total VAP, white VAP, minority VAP
-#     demos: Dict[str, str] = {x: x.split("_")[0].lower() for x in census_fields[3:-1]}
-
-#     # Rate the alternative minority opportunity as the percentage of proportional districts
-#     demo_ratings: Dict[str, int] = dict()
-#     for k, v in demos.items():
-#         Od: float = minority_metrics["opportunity_districts"][v]
-#         Pd: float = minority_metrics["proportional_districts"][v]
-#         demo_ratings[v] = max(min(round((Od / Pd) * 100), 100), 0) if Pd > 0 else 0
-
-#     # Calculate the alternative minority opportunity rating as the weighted average
-#     # of the single demographic ratings
-#     minority_vap: int = demos_totals[census_fields[8]]
-#     working: float = 0.0
-#     for k, v in demos.items():
-#         rating: int = demo_ratings[v]
-#         weight: float = demos_totals[k] / minority_vap
-#         working += rating * weight
-
-#     alt_minority_rating: int = max(min(round(working), 100), 0)
-
-#     return alt_minority_rating
 
 ### END ###
