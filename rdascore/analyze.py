@@ -6,7 +6,14 @@ from collections import defaultdict
 from typing import Any, List, Dict, Optional
 
 import rdapy as rda
-from rdabase import census_fields, election_fields, GeoID, OUT_OF_STATE, Assignment
+from rdabase import (
+    census_fields,
+    election_fields,
+    GeoID,
+    OUT_OF_STATE,
+    Assignment,
+    approx_equal,
+)
 
 ### FIELD NAMES ###
 
@@ -240,6 +247,29 @@ def border_length(
     return arc_length
 
 
+def arcs_are_symmetric(shapes: Dict[str, Any]) -> bool:
+    symmetric: bool = True
+    narcs: int = 0
+    nasymmetric: int = 0
+
+    for from_geoid, abstract in shapes.items():
+        for to_geoid, from_border in abstract["arcs"].items():
+            if to_geoid != "OUT_OF_STATE":
+                narcs += 1
+                to_border = shapes[to_geoid]["arcs"][from_geoid]
+                if not approx_equal(from_border, to_border, places=4):
+                    symmetric = False
+                    nasymmetric += 1
+                    print(
+                        f"Arcs between {from_geoid} & {to_geoid} are not symmetric: {from_border} & {to_border}."
+                    )
+
+    if not symmetric:
+        print(f"Total arcs: {narcs}, non-symmetric arcs: {nasymmetric}")
+
+    return symmetric
+
+
 def aggregate_shapes_by_district(
     assignments: List[Assignment],
     shapes: Dict[str, Any],
@@ -254,6 +284,8 @@ def aggregate_shapes_by_district(
     district_by_geoid: Dict[str, int | str] = dict()
     geoid_field: str = "GEOID" if "GEOID" in assignments[0] else "GEOID20"
     district_field: str = "DISTRICT" if "DISTRICT" in assignments[0] else "District"
+
+    arcs_are_symmetric(shapes)
 
     for a in assignments:
         plan.append({geoid_field: a.geoid, district_field: a.district})
@@ -281,7 +313,7 @@ def aggregate_shapes_by_district(
     # Calculate district diameters
 
     implied_district_props: List[Dict[str, float]] = []
-    for d in by_district[1:]:  # Remove the dummy district
+    for i, d in enumerate(by_district[1:]):  # Remove the dummy district
         _, _, r = rda.make_circle(d["exterior"])
 
         area: float = d["area"]
@@ -291,6 +323,10 @@ def aggregate_shapes_by_district(
         implied_district_props.append(
             {"area": area, "perimeter": perimeter, "diameter": diameter}
         )
+
+        print(
+            f"District {i + 1}: Area = {area}, Perimeter = {perimeter}, Diameter = {diameter}"
+        )  # DEBUG
 
     return implied_district_props
 
@@ -529,6 +565,8 @@ def calc_compactness_metrics(
 
         tot_reock += reock
         tot_polsby += polsby
+
+        print(f"District {i + 1}: Reock = {reock}, Polsby-Popper = {polsby}")  # DEBUG
 
     avg_reock: float = tot_reock / len(district_props)
     avg_polsby: float = tot_polsby / len(district_props)
