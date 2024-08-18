@@ -29,9 +29,6 @@ from rdascore.analyze import (
 class TestScorecard:
     def test_scorecard(self) -> None:
         for xx in ["NC", "NJ"]:
-            if xx == "NJ":
-                continue  # TODO - Re-generate the simplified shapes for NJ & add this back
-
             plan_path: str = f"sample/{xx}20C_baseline_100.csv"
             plan: List[Assignment] = load_plan(plan_path)
 
@@ -88,7 +85,6 @@ class TestScorecard:
             for metric in approx_ints:
                 assert abs(scorecard[metric] - expected[metric]) <= 1
 
-            # TODO - This is now failing
             for metric in approx_floats:
                 assert approx_equal(
                     scorecard[metric], expected[metric], places=approx_floats[metric]
