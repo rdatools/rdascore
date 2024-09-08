@@ -324,9 +324,9 @@ def aggregate_shapes_by_district(
             {"area": area, "perimeter": perimeter, "diameter": diameter}
         )
 
-        print(
-            f"District {i + 1}: Area = {area}, Perimeter = {perimeter}, Diameter = {diameter}"
-        )  # DEBUG
+        # print(
+        #     f"District {i + 1}: Area = {area}, Perimeter = {perimeter}, Diameter = {diameter}"
+        # )  # DEBUG
 
     return implied_district_props
 
@@ -566,7 +566,7 @@ def calc_compactness_metrics(
         tot_reock += reock
         tot_polsby += polsby
 
-        print(f"District {i + 1}: Reock = {reock}, Polsby-Popper = {polsby}")  # DEBUG
+        # print(f"District {i + 1}: Reock = {reock}, Polsby-Popper = {polsby}")  # DEBUG
 
     avg_reock: float = tot_reock / len(district_props)
     avg_polsby: float = tot_polsby / len(district_props)
