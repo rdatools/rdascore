@@ -11,7 +11,13 @@ $ git clone https://github.com/alecramsay/rdascore
 $ cd rdascore
 ```
 
-To install the package:
+To run the sample code, install the dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+To install the package in another project:
 
 ```bash
 $ pip install rdascore
