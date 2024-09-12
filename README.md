@@ -7,7 +7,7 @@ Compute Dave's Redistricting (DRA) analytics for an ensemble of redistricting pl
 To clone the repository:
 
 ```bash
-$ git clone https://github.com/alecramsay/rdascore
+$ git clone https://github.com/rdatools/rdascore
 $ cd rdascore
 ```
 
