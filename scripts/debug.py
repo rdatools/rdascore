@@ -25,9 +25,11 @@ from rdascore import (
     analyze_plan,
 )
 
-# Specify a state and an ensemble of plans
+### HARD-CODED PARAMETERS ###
 
 xx: str = "NC"
+plan_type: str = "upper"
+ensemble: List[str] = ["temp/NC20U_plan_0000.csv"]
 
 ### PATHS TO FILES ###
 
@@ -45,16 +47,13 @@ graph_path: str = path_to_file([shared_data_dir, xx]) + file_name(
     [xx, cycle, "graph"], "_", "json"
 )
 
-### AN ENSEMBLE OF PLAN CSV FILES ON DISK ###
-
-ensemble: List[str] = ["temp/NC20U_plan_0000.csv"]
 
 ### BOILERPLATE - DON'T CHANGE THIS ###
 
 data: Dict[str, Dict[str, str | int]] = load_data(data_path)
 shapes: Dict[str, Any] = load_shapes(shapes_path)
 graph: Dict[str, List[str]] = load_graph(graph_path)
-metadata: Dict[str, Any] = load_metadata(xx, data_path)
+metadata: Dict[str, Any] = load_metadata(xx, data_path, plan_type)
 
 ### ANALYZE EACH PLAN IN THE ENSEMBLE ###
 
