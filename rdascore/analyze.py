@@ -54,7 +54,7 @@ def analyze_plan(
     aggregates: Dict[str, Any] = aggregate_data_by_district(
         assignments, data, n_districts, n_counties, county_to_index, district_to_index
     )
-    district_props: List[Dict[str, Any]] = aggregate_shapes_by_district(
+    district_props: List[Dict[str, float]] = aggregate_shapes_by_district(
         assignments, shapes, graph, n_districts
     )
 
@@ -314,6 +314,7 @@ def aggregate_shapes_by_district(
 
     implied_district_props: List[Dict[str, float]] = []
     for i, d in enumerate(by_district[1:]):  # Remove the dummy district
+        # print(f"District {i + 1}: {d}")  # DEBUG
         _, _, r = rda.make_circle(d["exterior"])
 
         area: float = d["area"]
