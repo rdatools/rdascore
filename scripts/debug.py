@@ -28,14 +28,14 @@ from rdascore import (
 ### HARD-CODED PARAMETERS ###
 
 xx: str = "NC"
-plan_type: str = "upper"
-ensemble: List[str] = ["temp/NC20U_plan_0000.csv"]
+plan_type: str = "congress"
+ensemble: List[str] = ["testdata/NC20C_random_plan.csv"]
 
 ### PATHS TO FILES ###
 
 data_project: str = "../rdabase"
 shared_data_dir: str = f"{data_project}/data/"
-sample_dir: str = "sample"
+# sample_dir: str = "sample"
 
 data_path: str = path_to_file([shared_data_dir, xx]) + file_name(
     [xx, cycle, "data"], "_", "csv"

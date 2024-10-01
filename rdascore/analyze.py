@@ -85,6 +85,18 @@ def analyze_plan(
     scorecard["population_deviation"] = deviation
     scorecard.update(partisan_metrics)
     scorecard.update(minority_metrics)
+    if alt_minority:
+        subset: Dict[str, float] = {
+            f"alt_{k}": v
+            for k, v in alt_minority_metrics.items()
+            if k
+            in [
+                "opportunity_districts",
+                "opportunity_districts_pct",
+                "coalition_districts",
+            ]
+        }
+        scorecard.update(subset)
     scorecard.update(compactness_metrics)
     scorecard.update(splitting_metrics)
 
@@ -388,6 +400,7 @@ def calc_partisan_metrics(
 
     partisan_metrics["competitive_districts"] = all_results["responsiveness"]["cD"]
     partisan_metrics["competitive_district_pct"] = all_results["responsiveness"]["cDf"]
+    partisan_metrics["average_margin"] = calc_average_margin(Vf_array)
 
     partisan_metrics["responsiveness"] = all_results["responsiveness"]["littleR"]
     partisan_metrics["responsive_districts"] = all_results["responsiveness"]["rD"]
@@ -402,6 +415,14 @@ def calc_partisan_metrics(
     )
 
     return partisan_metrics
+
+
+def calc_average_margin(Vf_array: List[float]) -> float:
+    """Calculate the average margin of victory."""
+
+    margin: float = sum([abs(v - 0.5000) for v in Vf_array]) / len(Vf_array)
+
+    return margin
 
 
 def calc_minority_metrics(
@@ -545,11 +566,15 @@ def calc_alt_minority_metrics(
         by_district.append(district_demos)
 
     # NOTE - Calc alternative minority metrics
-    minority_metrics: Dict[str, float] = calc_alt_minority_opportunity(
+    alt_minority_metrics: Dict[str, float] = calc_alt_minority_opportunity(
         statewide_demos, by_district
     )
+    alt_minority_metrics["opportunity_districts_pct"] = (
+        alt_minority_metrics["opportunity_districts"]
+        / alt_minority_metrics["proportional_opportunities"]
+    )
 
-    return minority_metrics
+    return alt_minority_metrics
 
 
 def calc_compactness_metrics(
