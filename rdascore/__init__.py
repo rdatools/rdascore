@@ -8,6 +8,8 @@ from .analyze import (
     calc_population_deviation,
     calc_partisan_metrics,
     calc_minority_metrics,
+    est_alt_minority_opportunity,
+    calc_alt_minority_opportunity,
     calc_compactness_metrics,
     calc_splitting_metrics,
     rate_dimensions,
