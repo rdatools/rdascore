@@ -177,8 +177,6 @@ def aggregate_data_by_district(
     total_d_votes: int = 0
     d_by_district: Dict[int | str, int] = defaultdict(int)
     tot_by_district: Dict[int | str, int] = defaultdict(int)
-    # d_by_district: defaultdict[int, int] = defaultdict(int)
-    # tot_by_district: defaultdict[int, int] = defaultdict(int)
 
     demos_totals: Dict[str, int] = defaultdict(int)
     demos_by_district: List[Dict[str, int]] = [
@@ -231,7 +229,7 @@ def aggregate_data_by_district(
         "d_by_district": d_by_district,
         "tot_by_district": tot_by_district,
         "demos_totals": demos_totals,
-        "demos_by_district": demos_by_district,
+        "demos_by_district": demos_by_district[1:],  # Skip the dummy district
         "CxD": CxD,
     }
 
@@ -440,7 +438,7 @@ def calc_minority_metrics(
         )
 
     by_district: List[Dict[str, float]] = list()
-    for i in range(1, n_districts + 1):
+    for i in range(n_districts):
         district_demos: Dict[str, float] = dict()
         for demo in census_fields[2:]:  # Skip total population & total VAP
             simple_demo: str = demo.split("_")[0].lower()
@@ -555,7 +553,7 @@ def calc_alt_minority_metrics(
         )
 
     by_district: List[Dict[str, float]] = list()
-    for i in range(1, n_districts + 1):
+    for i in range(n_districts):
         district_demos: Dict[str, float] = dict()
         for demo in census_fields[2:]:  # Skip total population & total VAP
             simple_demo: str = demo.split("_")[0].lower()
