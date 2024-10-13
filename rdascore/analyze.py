@@ -82,6 +82,8 @@ def analyze_plan(
         )
 
     scorecard: Dict[str, Any] = dict()
+    scorecard["D"] = n_districts
+    scorecard["C"] = n_counties
     scorecard["population_deviation"] = deviation
     scorecard.update(partisan_metrics)
     scorecard.update(minority_metrics)
@@ -613,6 +615,23 @@ def calc_splitting_metrics(CxD: List[List[float]]) -> Dict[str, float]:
 
     # NOTE - The simple # of counties split unexpectedly is computed in dra2020/district-analytics,
     # i.e., not in dra2020/dra-analytics in the analytics proper.
+
+    # In the CxD matrix, rows are districts, columns are counties.
+    counties_split: int = 0
+    county_splits: int = 0
+    for j in range(len(CxD[0])):  # for each county
+        # Find the number districts that have this county
+        parts: int = 0
+        for i in range(len(CxD)):  # for each district
+            if CxD[i][j] > 0:
+                parts += 1
+        # If it's more than 1, increment the # of counties split and the # of splits
+        if parts > 1:
+            counties_split += 1
+            county_splits += parts - 1
+
+    splitting_metrics["counties_split"] = counties_split
+    splitting_metrics["county_splits"] = county_splits
 
     return splitting_metrics
 
