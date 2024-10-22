@@ -3,7 +3,7 @@ ANALYZE A PLAN
 """
 
 from collections import defaultdict
-from typing import Any, List, Dict, Optional
+from typing import Any, List, Dict, Tuple, Optional
 
 import rdapy as rda
 from rdabase import (
@@ -72,7 +72,11 @@ def analyze_plan(
     minority_metrics: Dict[str, float] = calc_minority_metrics(
         aggregates["demos_totals"], aggregates["demos_by_district"], n_districts
     )
-    compactness_metrics: Dict[str, float] = calc_compactness_metrics(district_props)
+    compactness_metrics: Dict[str, float]
+    compactness_by_district: List[Dict[str, float]]
+    compactness_metrics, compactness_by_district = calc_compactness_metrics(
+        district_props
+    )
     splitting_metrics: Dict[str, float] = calc_splitting_metrics(aggregates["CxD"])
 
     # Prep inputs for alternate minority ratings
@@ -579,20 +583,20 @@ def calc_alt_minority_metrics(
 
 def calc_compactness_metrics(
     district_props: List[Dict[str, float]]
-) -> Dict[str, float]:
+) -> Tuple[Dict[str, float], List[Dict[str, float]]]:
     """Calculate compactness metrics using implied district props."""
 
     tot_reock: float = 0
     tot_polsby: float = 0
+    by_district: List[Dict[str, float]] = list()
 
     for i, d in enumerate(district_props):
         reock: float = rda.reock_formula(d["area"], d["diameter"] / 2)
         polsby: float = rda.polsby_formula(d["area"], d["perimeter"])
+        by_district.append({"reock": reock, "polsby": polsby})
 
         tot_reock += reock
         tot_polsby += polsby
-
-        # print(f"District {i + 1}: Reock = {reock}, Polsby-Popper = {polsby}")  # DEBUG
 
     avg_reock: float = tot_reock / len(district_props)
     avg_polsby: float = tot_polsby / len(district_props)
@@ -601,7 +605,7 @@ def calc_compactness_metrics(
     compactness_metrics["reock"] = avg_reock
     compactness_metrics["polsby_popper"] = avg_polsby
 
-    return compactness_metrics
+    return compactness_metrics, by_district
 
 
 def calc_splitting_metrics(CxD: List[List[float]]) -> Dict[str, float]:
