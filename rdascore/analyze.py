@@ -78,7 +78,9 @@ def analyze_plan(
         district_props
     )
 
-    splitting_metrics: Dict[str, float] = calc_splitting_metrics(aggregates["CxD"])
+    splitting_metrics: Dict[str, float]
+    splitting_by_district: List[float]
+    splitting_metrics, splitting_by_district = calc_splitting_metrics(aggregates["CxD"])
 
     # Prep inputs for alternate minority ratings
     if alt_minority:
@@ -107,6 +109,7 @@ def analyze_plan(
     scorecard.update(compactness_metrics)
     scorecard["compactness_by_district"] = compactness_by_district
     scorecard.update(splitting_metrics)
+    scorecard["splitting_by_district"] = splitting_by_district
 
     ### RATE THE DIMENSIONS ###
 
@@ -156,8 +159,12 @@ def analyze_plan(
         "compactness",
         "splitting",
     ]
+    by_district_metrics: List[str] = [
+        "compactness_by_district",
+        "splitting_by_district",
+    ]  # Pass the by-district metrics up to the caller raw, unrounded
     for metric in scorecard:
-        if scorecard[metric] is None:
+        if scorecard[metric] is None or metric in by_district_metrics:
             continue
         if metric not in int_metrics:
             scorecard[metric] = round(scorecard[metric], precision)
@@ -610,7 +617,9 @@ def calc_compactness_metrics(
     return compactness_metrics, by_district
 
 
-def calc_splitting_metrics(CxD: List[List[float]]) -> Dict[str, float]:
+def calc_splitting_metrics(
+    CxD: List[List[float]],
+) -> Tuple[Dict[str, float], List[float]]:
     """Calculate county-district splitting metrics."""
 
     all_results: Dict[str, float] = rda.calc_county_district_splitting(CxD)
@@ -619,9 +628,7 @@ def calc_splitting_metrics(CxD: List[List[float]]) -> Dict[str, float]:
     splitting_metrics["county_splitting"] = all_results["county"]
     splitting_metrics["district_splitting"] = all_results["district"]
 
-    # NOTE - The simple # of counties split unexpectedly is computed in dra2020/district-analytics,
-    # i.e., not in dra2020/dra-analytics in the analytics proper.
-
+    # Calculate the # of counties split and the # of splits
     # In the CxD matrix, rows are districts, columns are counties.
     counties_split: int = 0
     county_splits: int = 0
@@ -639,7 +646,29 @@ def calc_splitting_metrics(CxD: List[List[float]]) -> Dict[str, float]:
     splitting_metrics["counties_split"] = counties_split
     splitting_metrics["county_splits"] = county_splits
 
-    return splitting_metrics
+    # Calculate split scores by district
+    # This is redundantly calculating intermediate values that rda.calc_county_district_splitting(CxD) above
+    # does, but it's easier to recompute the constituents here than it is to tunnel them from rdapy.
+    dT: list[float] = rda.district_totals(CxD)
+    cT: list[float] = rda.county_totals(CxD)
+    rD: list[list[float]] = rda.reduce_district_splits(CxD, cT)
+    g: list[list[float]] = rda.calc_district_fractions(rD, dT)
+    by_district: List[float] = splitting_by_district(g)
+
+    return splitting_metrics, by_district
+
+
+def splitting_by_district(g: List[List[float]]) -> List[float]:
+    """Calculate split scores by district."""
+
+    numD: int = len(g)
+    by_district: List[float] = list()
+
+    for i in range(numD):
+        split_score: float = rda.district_split_score(i, g)
+        by_district.append(split_score)
+
+    return by_district
 
 
 def rate_dimensions(
