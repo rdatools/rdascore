@@ -77,6 +77,7 @@ def analyze_plan(
     compactness_metrics, compactness_by_district = calc_compactness_metrics(
         district_props
     )
+
     splitting_metrics: Dict[str, float] = calc_splitting_metrics(aggregates["CxD"])
 
     # Prep inputs for alternate minority ratings
@@ -104,6 +105,7 @@ def analyze_plan(
         }
         scorecard.update(subset)
     scorecard.update(compactness_metrics)
+    scorecard["compactness_by_district"] = compactness_by_district
     scorecard.update(splitting_metrics)
 
     ### RATE THE DIMENSIONS ###
