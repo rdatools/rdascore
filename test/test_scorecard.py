@@ -101,7 +101,8 @@ class TestScorecard:
 
             #
 
-            actual: Dict[str, float] = calc_compactness_metrics(implicit_district_props)
+            actual: Dict[str, float]
+            actual, _ = calc_compactness_metrics(implicit_district_props)
 
             # decimals_path: str = f"{testdata_dir}/expected_decimal_places.json"
             # approx_floats: Dict[str, int] = read_json(decimals_path)
