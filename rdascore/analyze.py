@@ -88,21 +88,12 @@ def analyze_plan(
     splitting_metrics, splitting_by_district = calc_splitting_metrics(aggregates["CxD"])
 
     # Added: Discrete compactness metrics
+    # TODO - Use the log cut score
+    # TODO - Review w/ Todd
 
     plan: Dict[str, int | str] = {a.geoid: a.district for a in assignments}
     cut_score: int = calc_cut_score(plan, graph)
-    # TODO
     district_graphs = split_graph_by_districts(graph, plan)
-    #
-    # scores: List[float] = [
-    #     calc_spanning_tree_score(g) for g in district_graphs.values()
-    # ]
-    # spanning_tree_score: float = sum(scores)
-    #
-    # spanning_tree_score = sum(
-    #     [calc_spanning_tree_score(g) for g in district_graphs.values()]
-    # )
-    #
     spanning_tree_score: float = sum(
         [calc_log_spanning_tree_score(g) for g in district_graphs.values()]
     )
