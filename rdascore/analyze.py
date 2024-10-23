@@ -14,6 +14,12 @@ from rdabase import (
     Assignment,
     approx_equal,
 )
+from .discrete_compactness import (
+    calc_cut_score,
+    calc_spanning_tree_score,
+    split_graph_by_districts,
+    remove_out_of_state_border,
+)
 
 ### FIELD NAMES ###
 
@@ -82,7 +88,18 @@ def analyze_plan(
     splitting_by_district: List[float]
     splitting_metrics, splitting_by_district = calc_splitting_metrics(aggregates["CxD"])
 
-    # Prep inputs for alternate minority ratings
+    # Added: Discrete compactness metrics
+
+    plan: Dict[str, int | str] = {a.geoid: a.district for a in assignments}
+    stripped_graph: Dict[str, List[str]] = remove_out_of_state_border(graph)
+    cut_score: int = calc_cut_score(plan, stripped_graph)
+    district_graphs = split_graph_by_districts(stripped_graph, plan)
+    # TODO - HERE
+    # spanning_tree_score = sum(
+    #     [calc_spanning_tree_score(g) for g in district_graphs.values()]
+    # )
+
+    # Added: Alternate minority ratings
     if alt_minority:
         alt_minority_metrics: Dict[str, float] = calc_alt_minority_metrics(
             aggregates["demos_totals"], aggregates["demos_by_district"], n_districts

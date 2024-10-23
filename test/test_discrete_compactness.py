@@ -6,9 +6,9 @@ from typing import Any, Dict, List
 
 from rdabase import approx_equal
 from rdascore import (
-    cut_edges,
-    spanning_tree_score,
-    spanning_trees,
+    calc_cut_score,
+    calc_spanning_tree_score,
+    count_spanning_trees,
     split_graph_by_districts,
 )
 
@@ -50,7 +50,7 @@ class TestScorecard:
     def test_spanning_trees(self) -> None:
         # Example graph: a triangle
         graph = {"A": ["B", "C"], "B": ["A", "C"], "C": ["A", "B"]}
-        assert spanning_trees(graph) == 3
+        assert count_spanning_trees(graph) == 3
 
         # Example graph: a square with a diagonal
         # A -- B
@@ -62,7 +62,7 @@ class TestScorecard:
             "C": ["A", "B", "D"],
             "D": ["A", "C"],
         }
-        assert spanning_trees(graph) == 8
+        assert count_spanning_trees(graph) == 8
 
         # Example graph: the 10x10 grid in the paper
         graph = create_10x10_grid_graph()
@@ -73,7 +73,9 @@ class TestScorecard:
 
     def test_spanning_tree_score(self) -> None:
         graph = {"A": ["B", "C"], "B": ["A", "C"], "C": ["A", "B"]}
-        assert approx_equal(spanning_tree_score(graph), 1.0986122886681098, places=6)
+        assert approx_equal(
+            calc_spanning_tree_score(graph), 1.0986122886681098, places=6
+        )
 
     def test_10x10_examples(self) -> None:
         graph = create_10x10_grid_graph()
@@ -182,14 +184,14 @@ class TestScorecard:
             "9_8": 3,
             "9_9": 3,
         }
-        cuts: int = cut_edges(plan, graph)
+        cuts: int = calc_cut_score(plan, graph)
         assert cuts == 20
 
         district_graphs = split_graph_by_districts(graph, plan)
-        plan_spanning_tree_score = sum(
-            [spanning_tree_score(g) for g in district_graphs.values()]
+        spanning_tree_score = sum(
+            [calc_spanning_tree_score(g) for g in district_graphs.values()]
         )
-        assert approx_equal(plan_spanning_tree_score, 80.56, places=2)
+        assert approx_equal(spanning_tree_score, 80.56, places=2)
 
         # Middle example
         plan: Dict[str, int | str] = {
@@ -295,14 +297,14 @@ class TestScorecard:
             "9_9": 3,
         }
 
-        cuts: int = cut_edges(plan, graph)
+        cuts: int = calc_cut_score(plan, graph)
         assert cuts == 33
 
         district_graphs = split_graph_by_districts(graph, plan)
-        plan_spanning_tree_score = sum(
-            [spanning_tree_score(g) for g in district_graphs.values()]
+        spanning_tree_score = sum(
+            [calc_spanning_tree_score(g) for g in district_graphs.values()]
         )
-        assert approx_equal(plan_spanning_tree_score, 65.53, places=2)
+        assert approx_equal(spanning_tree_score, 65.53, places=2)
 
         # Right example
         plan: Dict[str, int | str] = {
@@ -408,14 +410,14 @@ class TestScorecard:
             "9_9": 4,
         }
 
-        cuts: int = cut_edges(plan, graph)
+        cuts: int = calc_cut_score(plan, graph)
         assert cuts == 73
 
         district_graphs = split_graph_by_districts(graph, plan)
-        plan_spanning_tree_score = sum(
-            [spanning_tree_score(g) for g in district_graphs.values()]
+        spanning_tree_score = sum(
+            [calc_spanning_tree_score(g) for g in district_graphs.values()]
         )
-        assert approx_equal(plan_spanning_tree_score, 14.99, places=2)
+        assert approx_equal(spanning_tree_score, 14.99, places=2)
 
 
 ### END ###

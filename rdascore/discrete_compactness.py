@@ -11,7 +11,7 @@ from collections import defaultdict
 from rdabase import OUT_OF_STATE
 
 
-def cut_edges(plan: Dict[str, int | str], graph: Dict[str, List[str]]) -> int:
+def calc_cut_score(plan: Dict[str, int | str], graph: Dict[str, List[str]]) -> int:
     """Given a plan and a graph, return the number of cut edges. Definition 3 in Section 5.4."""
 
     # precision: int = 4
@@ -43,16 +43,16 @@ def cut_edges(plan: Dict[str, int | str], graph: Dict[str, List[str]]) -> int:
     return cuts
 
 
-def spanning_tree_score(graph: Dict[str, List[str]]) -> float:
+def calc_spanning_tree_score(graph: Dict[str, List[str]]) -> float:
     """Calculate the spanning tree score for a graph. Definition 4 in Section 5.5.
 
     For a graph with 3 spanning trees, the score is ln(3) = 1.0986122886681098.
     """
 
-    return np.log(spanning_trees(graph))
+    return np.log(count_spanning_trees(graph))
 
 
-def spanning_trees(graph: Dict[str, List[str]]) -> int:
+def count_spanning_trees(graph: Dict[str, List[str]]) -> int:
     """
     Calculate the number of spanning trees in an undirected graph using Kirchhoff's matrix tree theorem.
 
@@ -92,6 +92,18 @@ def spanning_trees(graph: Dict[str, List[str]]) -> int:
 
 
 ### HELPERS ###
+
+
+def remove_out_of_state_border(graph: Dict[str, List[str]]) -> Dict[str, List[str]]:
+    """Remove the OUT_OF_STATE node & neighbors from the graph."""
+
+    without_border: Dict[str, List[str]] = {}
+
+    for node, neighbors in graph.items():
+        if node != OUT_OF_STATE:
+            without_border[node] = [n for n in neighbors if n != OUT_OF_STATE]
+
+    return without_border
 
 
 def split_graph_by_districts(
