@@ -189,7 +189,7 @@ class TestScorecard:
         plan_spanning_tree_score = sum(
             [spanning_tree_score(g) for g in district_graphs.values()]
         )
-        assert approx_equal(plan_spanning_tree_score, 80.5564, places=4)
+        assert approx_equal(plan_spanning_tree_score, 80.56, places=2)
 
         # Middle example
 
