@@ -119,8 +119,13 @@ def split_graph_by_districts(
     Returns:
     Dictionary mapping district numbers to their subgraphs
     """
+    stripped_graph: Dict[str, List[str]] = remove_out_of_state_border(graph)
+
     # Validate inputs
-    if not set(graph.keys()) == set(plan.keys()):
+    diff = set(stripped_graph.keys()) ^ set(plan.keys())
+    # if not set(stripped_graph.keys()) == set(plan.keys()):
+    if diff:
+        print(f"difference: {diff}")
         raise ValueError(
             "Graph and district assignments must contain the same vertices"
         )
@@ -137,7 +142,7 @@ def split_graph_by_districts(
         subgraph = {}
         for node in nodes:
             # Only include neighbors that are in the same district
-            neighbors = [n for n in graph[node] if n in nodes]
+            neighbors = [n for n in stripped_graph[node] if n in nodes]
             subgraph[node] = neighbors
         district_subgraphs[district] = subgraph
 

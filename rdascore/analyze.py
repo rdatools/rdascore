@@ -91,13 +91,11 @@ def analyze_plan(
     # Added: Discrete compactness metrics
 
     plan: Dict[str, int | str] = {a.geoid: a.district for a in assignments}
-    stripped_graph: Dict[str, List[str]] = remove_out_of_state_border(graph)
-    cut_score: int = calc_cut_score(plan, stripped_graph)
-    district_graphs = split_graph_by_districts(stripped_graph, plan)
-    # TODO - HERE
-    # spanning_tree_score = sum(
-    #     [calc_spanning_tree_score(g) for g in district_graphs.values()]
-    # )
+    cut_score: int = calc_cut_score(plan, graph)
+    district_graphs = split_graph_by_districts(graph, plan)
+    spanning_tree_score = sum(
+        [calc_spanning_tree_score(g) for g in district_graphs.values()]
+    )
 
     # Added: Alternate minority ratings
     if alt_minority:
