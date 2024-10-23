@@ -44,36 +44,7 @@ def calc_cut_score(plan: Dict[str, int | str], graph: Dict[str, List[str]]) -> i
     return cuts
 
 
-def calc_log_spanning_tree_score(graph: Dict[str, List[str]]) -> float:
-    """
-    Calculate the *log* spanning tree score for a graph.
-
-    Definition 4 in Section 5.5, in the paper, modified to handle very large graphs
-    by using the natural logarithm of the number of spanning trees as opposed to the number itself.
-
-    See calc_spanning_tree_score() for the simple version that works on small graphs.
-    """
-
-    spanning_trees: float = log_count_spanning_trees(graph)
-    score: float = float(np.log(spanning_trees))
-
-    return score
-
-
 def calc_spanning_tree_score(graph: Dict[str, List[str]]) -> float:
-    """
-    Calculate the spanning tree score for a graph. Definition 4 in Section 5.5.
-
-    For a graph with 3 spanning trees, the score is ln(3) = 1.0986122886681098.
-    """
-
-    spanning_trees: int = count_spanning_trees(graph)
-    score: float = float(np.log(spanning_trees))
-
-    return score
-
-
-def log_count_spanning_trees(graph: Dict[str, List[str]]) -> float:
     """
     Calculate the *log* number of spanning trees in an undirected graph,
     to handle very large graphs.
@@ -94,43 +65,45 @@ def log_count_spanning_trees(graph: Dict[str, List[str]]) -> float:
     return logdet
 
 
-def count_spanning_trees(graph: Dict[str, List[str]]) -> int:
-    """
-    Calculate the number of spanning trees in an undirected graph using Kirchhoff's matrix tree theorem.
+# def count_spanning_trees(graph: Dict[str, List[str]]) -> int:
+#     """
+#     Calculate the number of spanning trees in an undirected graph using Kirchhoff's matrix tree theorem.
 
-    Parameters:
-    graph: Dictionary where keys are vertices and values are lists of adjacent vertices
+#     Only suitable for small graphs.
 
-    Returns:
-    int: Number of spanning trees in the graph
+#     Parameters:
+#     graph: Dictionary where keys are vertices and values are lists of adjacent vertices
 
-    Example:
-    >>> graph = {
-    ...     'A': ['B', 'C'],
-    ...     'B': ['A', 'C'],
-    ...     'C': ['A', 'B']
-    ... }
-    >>> count_spanning_trees(graph)
-    3
-    """
-    # Convert the graph to an adjacency matrix
-    adjacency_matrix, vertices = convert_graph_to_matrix(graph)
+#     Returns:
+#     int: Number of spanning trees in the graph
 
-    # Calculate the degree matrix
-    degree_matrix = np.diag(np.sum(adjacency_matrix, axis=1))
+#     Example:
+#     >>> graph = {
+#     ...     'A': ['B', 'C'],
+#     ...     'B': ['A', 'C'],
+#     ...     'C': ['A', 'B']
+#     ... }
+#     >>> count_spanning_trees(graph)
+#     3
+#     """
+#     # Convert the graph to an adjacency matrix
+#     adjacency_matrix, vertices = convert_graph_to_matrix(graph)
 
-    # Calculate the Laplacian matrix
-    laplacian_matrix = degree_matrix - adjacency_matrix
+#     # Calculate the degree matrix
+#     degree_matrix = np.diag(np.sum(adjacency_matrix, axis=1))
 
-    # Remove the last row and column to create the reduced Laplacian
-    reduced_laplacian = laplacian_matrix[:-1, :-1]
+#     # Calculate the Laplacian matrix
+#     laplacian_matrix = degree_matrix - adjacency_matrix
 
-    # Calculate the determinant of the reduced Laplacian
-    # The determinant might be complex, so we take the real part and round it
-    determinant = det(reduced_laplacian)
-    num_spanning_trees = int(round(float(np.real(determinant))))
+#     # Remove the last row and column to create the reduced Laplacian
+#     reduced_laplacian = laplacian_matrix[:-1, :-1]
 
-    return num_spanning_trees
+#     # Calculate the determinant of the reduced Laplacian
+#     # The determinant might be complex, so we take the real part and round it
+#     determinant = det(reduced_laplacian)
+#     num_spanning_trees = int(round(float(np.real(determinant))))
+
+#     return num_spanning_trees
 
 
 ### HELPERS ###

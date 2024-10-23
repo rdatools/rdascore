@@ -16,10 +16,8 @@ from rdabase import (
 )
 from .discrete_compactness import (
     calc_cut_score,
-    calc_log_spanning_tree_score,
     calc_spanning_tree_score,
     split_graph_by_districts,
-    log_count_spanning_trees,
 )
 
 ### FIELD NAMES ###
@@ -94,7 +92,7 @@ def analyze_plan(
     cut_score: int = calc_cut_score(plan, graph)
     district_graphs = split_graph_by_districts(graph, plan)
     spanning_tree_score: float = sum(
-        [log_count_spanning_trees(g) for g in district_graphs.values()]
+        calc_spanning_tree_score(g) for g in district_graphs.values()
     )
 
     # Added: Alternate minority ratings
@@ -122,6 +120,8 @@ def analyze_plan(
         }
         scorecard.update(subset)
     scorecard.update(compactness_metrics)
+    scorecard["cut_score"] = cut_score
+    scorecard["spanning_tree_score"] = spanning_tree_score
     scorecard["compactness_by_district"] = compactness_by_district
     scorecard.update(splitting_metrics)
     scorecard["splitting_by_district"] = splitting_by_district

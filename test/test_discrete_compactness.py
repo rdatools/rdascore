@@ -8,9 +8,7 @@ from rdabase import approx_equal
 from rdascore import (
     calc_cut_score,
     calc_spanning_tree_score,
-    calc_log_spanning_tree_score,
-    count_spanning_trees,
-    log_count_spanning_trees,
+    calc_spanning_tree_score,
     split_graph_by_districts,
 )
 
@@ -49,33 +47,6 @@ def create_10x10_grid_graph():
 
 
 class TestScorecard:
-    def test_spanning_trees(self) -> None:
-        # Example graph: a triangle
-        graph = {"A": ["B", "C"], "B": ["A", "C"], "C": ["A", "B"]}
-        assert count_spanning_trees(graph) == 3
-
-        # Example graph: a square with a diagonal
-        # A -- B
-        # | \  |
-        # D -- C
-        graph = {
-            "A": ["B", "C", "D"],
-            "B": ["A", "C"],
-            "C": ["A", "B", "D"],
-            "D": ["A", "C"],
-        }
-        assert count_spanning_trees(graph) == 8
-        assert approx_equal(
-            log_count_spanning_trees(graph), 2.0794415416798357, places=6
-        )
-
-        # Example graph: the 10x10 grid in the paper
-        graph = create_10x10_grid_graph()
-        num_nodes = len(graph)
-        assert num_nodes == 100
-        num_edges = sum(len(neighbors) for neighbors in graph.values()) // 2
-        assert num_edges == 180
-
     def test_spanning_tree_score(self) -> None:
         graph = {"A": ["B", "C"], "B": ["A", "C"], "C": ["A", "B"]}
         assert approx_equal(
@@ -83,7 +54,12 @@ class TestScorecard:
         )
 
     def test_10x10_examples(self) -> None:
+        # Example graph: the 10x10 grid in the paper
         graph = create_10x10_grid_graph()
+        num_nodes = len(graph)
+        assert num_nodes == 100
+        num_edges = sum(len(neighbors) for neighbors in graph.values()) // 2
+        assert num_edges == 180
 
         # Left example: Four square districts
 
