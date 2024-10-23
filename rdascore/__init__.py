@@ -17,7 +17,9 @@ from .analyze import (
 from .discrete_compactness import (
     calc_cut_score,
     calc_spanning_tree_score,
+    calc_log_spanning_tree_score,
     count_spanning_trees,
+    log_count_spanning_trees,
     split_graph_by_districts,
     remove_out_of_state_border,
 )

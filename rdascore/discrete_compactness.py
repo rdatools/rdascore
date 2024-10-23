@@ -4,6 +4,7 @@ based on "Discrete Geometry for Electoral Geography" by Moon Duchin and Bridget 
 """
 
 from typing import Any, List, Dict, Set
+
 import numpy as np
 from scipy.linalg import det
 from collections import defaultdict
@@ -43,13 +44,53 @@ def calc_cut_score(plan: Dict[str, int | str], graph: Dict[str, List[str]]) -> i
     return cuts
 
 
+def calc_log_spanning_tree_score(graph: Dict[str, List[str]]) -> float:
+    """
+    Calculate the *log* spanning tree score for a graph.
+
+    Definition 4 in Section 5.5, in the paper, modified to handle very large graphs
+    by using the natural logarithm of the number of spanning trees as opposed to the number itself.
+
+    See calc_spanning_tree_score() for the simple version that works on small graphs.
+    """
+
+    spanning_trees: float = log_count_spanning_trees(graph)
+    score: float = float(np.log(spanning_trees))
+
+    return score
+
+
 def calc_spanning_tree_score(graph: Dict[str, List[str]]) -> float:
-    """Calculate the spanning tree score for a graph. Definition 4 in Section 5.5.
+    """
+    Calculate the spanning tree score for a graph. Definition 4 in Section 5.5.
 
     For a graph with 3 spanning trees, the score is ln(3) = 1.0986122886681098.
     """
 
-    return np.log(count_spanning_trees(graph))
+    spanning_trees: int = count_spanning_trees(graph)
+    score: float = float(np.log(spanning_trees))
+
+    return score
+
+
+def log_count_spanning_trees(graph: Dict[str, List[str]]) -> float:
+    """
+    Calculate the *log* number of spanning trees in an undirected graph,
+    to handle very large graphs.
+
+    See count_spanning_trees() for the simple version that works on small graphs.
+    """
+    adjacency_matrix, vertices = convert_graph_to_matrix(graph)
+    degree_matrix = np.diag(np.sum(adjacency_matrix, axis=1))
+    laplacian_matrix = degree_matrix - adjacency_matrix
+    reduced_laplacian = laplacian_matrix[:-1, :-1]
+
+    sign, logdet = np.linalg.slogdet(reduced_laplacian)
+
+    if sign <= 0:  # This shouldn't happen for a valid graph
+        return float("-inf")
+
+    return logdet
 
 
 def count_spanning_trees(graph: Dict[str, List[str]]) -> int:

@@ -16,9 +16,8 @@ from rdabase import (
 )
 from .discrete_compactness import (
     calc_cut_score,
-    calc_spanning_tree_score,
+    calc_log_spanning_tree_score,
     split_graph_by_districts,
-    remove_out_of_state_border,
 )
 
 ### FIELD NAMES ###
@@ -92,9 +91,20 @@ def analyze_plan(
 
     plan: Dict[str, int | str] = {a.geoid: a.district for a in assignments}
     cut_score: int = calc_cut_score(plan, graph)
+    # TODO
     district_graphs = split_graph_by_districts(graph, plan)
-    spanning_tree_score = sum(
-        [calc_spanning_tree_score(g) for g in district_graphs.values()]
+    #
+    # scores: List[float] = [
+    #     calc_spanning_tree_score(g) for g in district_graphs.values()
+    # ]
+    # spanning_tree_score: float = sum(scores)
+    #
+    # spanning_tree_score = sum(
+    #     [calc_spanning_tree_score(g) for g in district_graphs.values()]
+    # )
+    #
+    spanning_tree_score: float = sum(
+        [calc_log_spanning_tree_score(g) for g in district_graphs.values()]
     )
 
     # Added: Alternate minority ratings

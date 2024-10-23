@@ -8,7 +8,9 @@ from rdabase import approx_equal
 from rdascore import (
     calc_cut_score,
     calc_spanning_tree_score,
+    calc_log_spanning_tree_score,
     count_spanning_trees,
+    log_count_spanning_trees,
     split_graph_by_districts,
 )
 
@@ -63,6 +65,9 @@ class TestScorecard:
             "D": ["A", "C"],
         }
         assert count_spanning_trees(graph) == 8
+        assert approx_equal(
+            log_count_spanning_trees(graph), 2.0794415416798357, places=6
+        )
 
         # Example graph: the 10x10 grid in the paper
         graph = create_10x10_grid_graph()
