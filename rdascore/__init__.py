@@ -14,6 +14,11 @@ from .analyze import (
     calc_splitting_metrics,
     rate_dimensions,
 )
-from .discrete_compactness import cut_edges, spanning_tree_score, spanning_trees
+from .discrete_compactness import (
+    cut_edges,
+    spanning_tree_score,
+    spanning_trees,
+    split_graph_by_districts,
+)
 
 name: str = "rdascore"

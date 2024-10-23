@@ -3,9 +3,10 @@ CUT SCORE AND SPANNING TREE SCORE
 based on "Discrete Geometry for Electoral Geography" by Moon Duchin and Bridget Eileen Tenner
 """
 
-from typing import Any, List, Dict
+from typing import Any, List, Dict, Set
 import numpy as np
 from scipy.linalg import det
+from collections import defaultdict
 
 from rdabase import OUT_OF_STATE
 
@@ -13,8 +14,8 @@ from rdabase import OUT_OF_STATE
 def cut_edges(plan: Dict[str, int | str], graph: Dict[str, List[str]]) -> int:
     """Given a plan and a graph, return the number of cut edges. Definition 3 in Section 5.4."""
 
-    precision: int = 4
-    cuts, edges, boundaries, nodes = 0, 0, 0, 0
+    # precision: int = 4
+    nodes, edges2x, boundaries, cuts2x = 0, 0, 0, 0
 
     for node, neighbors in graph.items():
         if node == OUT_OF_STATE:
@@ -25,10 +26,10 @@ def cut_edges(plan: Dict[str, int | str], graph: Dict[str, List[str]]) -> int:
         for neighbor in neighbors:
             if neighbor == OUT_OF_STATE:
                 continue
-            edges += 1
+            edges2x += 1
 
             if plan[node] != plan[neighbor]:
-                cuts += 1
+                cuts2x += 1
                 boundary = True
 
         if boundary:
@@ -36,6 +37,8 @@ def cut_edges(plan: Dict[str, int | str], graph: Dict[str, List[str]]) -> int:
 
     # cut_pct: float = round(cuts / edges, precision)
     # boundary_pct: float = round(boundaries / nodes, precision)
+
+    cuts = cuts2x // 2
 
     return cuts
 
@@ -89,6 +92,44 @@ def spanning_trees(graph: Dict[str, List[str]]) -> int:
 
 
 ### HELPERS ###
+
+
+def split_graph_by_districts(
+    graph: Dict[str, List[str]], plan: Dict[str, int | str]
+) -> Dict[int | str, Dict[str, List[str]]]:
+    """
+    Split a graph into subgraphs based on district assignments.
+
+    Parameters:
+    graph: Dictionary where keys are vertices and values are lists of adjacent vertices
+    plan: Dictionary mapping vertex names to district numbers
+
+    Returns:
+    Dictionary mapping district numbers to their subgraphs
+    """
+    # Validate inputs
+    if not set(graph.keys()) == set(plan.keys()):
+        raise ValueError(
+            "Graph and district assignments must contain the same vertices"
+        )
+
+    # Group nodes by district
+    district_nodes: Dict[int | str, Set[str]] = defaultdict(set)
+    for node, district in plan.items():
+        district_nodes[district].add(node)
+
+    # Create subgraph for each district
+    district_subgraphs: Dict[int | str, Dict[str, List[str]]] = {}
+
+    for district, nodes in district_nodes.items():
+        subgraph = {}
+        for node in nodes:
+            # Only include neighbors that are in the same district
+            neighbors = [n for n in graph[node] if n in nodes]
+            subgraph[node] = neighbors
+        district_subgraphs[district] = subgraph
+
+    return district_subgraphs
 
 
 def convert_graph_to_matrix(
