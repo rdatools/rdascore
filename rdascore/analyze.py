@@ -13,6 +13,7 @@ from rdabase import (
     OUT_OF_STATE,
     Assignment,
     approx_equal,
+    time_function,
 )
 from .discrete_compactness import (
     calc_cut_score,
@@ -38,7 +39,7 @@ dem_votes_field: str = election_fields[2]
 # oth_votes_field: str = election_fields[3]
 
 
-# @time_function
+@time_function
 def analyze_plan(
     assignments: List[Assignment],
     data: Dict[str, Dict[str, str | int]],
@@ -90,9 +91,14 @@ def analyze_plan(
     # Additional discrete compactness metrics
     plan: Dict[str, int | str] = {a.geoid: a.district for a in assignments}
     cut_score: int = calc_cut_score(plan, graph)
+
     district_graphs = split_graph_by_districts(graph, plan)
+    spanning_tree_by_district: List[Dict[str, float]] = [
+        {"spanning_tree_score": calc_spanning_tree_score(g)}
+        for g in district_graphs.values()
+    ]
     spanning_tree_score: float = sum(
-        calc_spanning_tree_score(g) for g in district_graphs.values()
+        d["spanning_tree_score"] for d in spanning_tree_by_district
     )
 
     # Additional alternate minority ratings
@@ -103,8 +109,15 @@ def analyze_plan(
 
     # Combine the by-district metrics
     assert len(compactness_by_district) == len(splitting_by_district)
+    assert len(compactness_by_district) == len(spanning_tree_by_district)
+
     by_district = [
-        {**c, **s} for c, s in zip(compactness_by_district, splitting_by_district)
+        {**x, **y, **z}
+        for x, y, z in zip(
+            compactness_by_district,
+            spanning_tree_by_district,
+            splitting_by_district,
+        )
     ]
 
     # Build the scorecard
