@@ -17,7 +17,9 @@ from rdabase import (
 from .discrete_compactness import (
     calc_cut_score,
     calc_log_spanning_tree_score,
+    calc_spanning_tree_score,
     split_graph_by_districts,
+    log_count_spanning_trees,
 )
 
 ### FIELD NAMES ###
@@ -88,14 +90,11 @@ def analyze_plan(
     splitting_metrics, splitting_by_district = calc_splitting_metrics(aggregates["CxD"])
 
     # Added: Discrete compactness metrics
-    # TODO - Use the log cut score
-    # TODO - Review w/ Todd
-
     plan: Dict[str, int | str] = {a.geoid: a.district for a in assignments}
     cut_score: int = calc_cut_score(plan, graph)
     district_graphs = split_graph_by_districts(graph, plan)
     spanning_tree_score: float = sum(
-        [calc_log_spanning_tree_score(g) for g in district_graphs.values()]
+        [log_count_spanning_trees(g) for g in district_graphs.values()]
     )
 
     # Added: Alternate minority ratings

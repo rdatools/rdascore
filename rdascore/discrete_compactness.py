@@ -80,6 +80,7 @@ def log_count_spanning_trees(graph: Dict[str, List[str]]) -> float:
 
     See count_spanning_trees() for the simple version that works on small graphs.
     """
+
     adjacency_matrix, vertices = convert_graph_to_matrix(graph)
     degree_matrix = np.diag(np.sum(adjacency_matrix, axis=1))
     laplacian_matrix = degree_matrix - adjacency_matrix
