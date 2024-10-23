@@ -84,10 +84,10 @@ def analyze_plan(
     )
 
     splitting_metrics: Dict[str, float]
-    splitting_by_district: List[float]
+    splitting_by_district: List[Dict[str, float]]
     splitting_metrics, splitting_by_district = calc_splitting_metrics(aggregates["CxD"])
 
-    # Added: Discrete compactness metrics
+    # Additional discrete compactness metrics
     plan: Dict[str, int | str] = {a.geoid: a.district for a in assignments}
     cut_score: int = calc_cut_score(plan, graph)
     district_graphs = split_graph_by_districts(graph, plan)
@@ -95,12 +95,19 @@ def analyze_plan(
         calc_spanning_tree_score(g) for g in district_graphs.values()
     )
 
-    # Added: Alternate minority ratings
+    # Additional alternate minority ratings
     if alt_minority:
         alt_minority_metrics: Dict[str, float] = calc_alt_minority_metrics(
             aggregates["demos_totals"], aggregates["demos_by_district"], n_districts
         )
 
+    # Combine the by-district metrics
+    assert len(compactness_by_district) == len(splitting_by_district)
+    by_district = [
+        {**c, **s} for c, s in zip(compactness_by_district, splitting_by_district)
+    ]
+
+    # Build the scorecard
     scorecard: Dict[str, Any] = dict()
     scorecard["D"] = n_districts
     scorecard["C"] = n_counties
@@ -122,12 +129,9 @@ def analyze_plan(
     scorecard.update(compactness_metrics)
     scorecard["cut_score"] = cut_score
     scorecard["spanning_tree_score"] = spanning_tree_score
-    scorecard["compactness_by_district"] = compactness_by_district
     scorecard.update(splitting_metrics)
-    scorecard["splitting_by_district"] = splitting_by_district
 
-    ### RATE THE DIMENSIONS ###
-
+    # Rate the dimensions
     ratings: Dict[str, int] = rate_dimensions(
         proportionality=(
             scorecard["pr_deviation"],
@@ -160,8 +164,10 @@ def analyze_plan(
 
     scorecard.update(ratings)
 
-    ### TRIM THE FLOATING POINT RESULTS ###
+    # Add the by-district metrics
+    scorecard["by_district"] = by_district
 
+    # Trim the floating point numbers
     precision: int = 4
     int_metrics: List[str] = [
         "pr_seats",
@@ -174,12 +180,8 @@ def analyze_plan(
         "compactness",
         "splitting",
     ]
-    by_district_metrics: List[str] = [
-        "compactness_by_district",
-        "splitting_by_district",
-    ]  # Pass the by-district metrics up to the caller raw, unrounded
     for metric in scorecard:
-        if scorecard[metric] is None or metric in by_district_metrics:
+        if scorecard[metric] is None or metric == "by_district":
             continue
         if metric not in int_metrics:
             scorecard[metric] = round(scorecard[metric], precision)
@@ -485,21 +487,16 @@ def calc_minority_metrics(
     return minority_metrics
 
 
-# NOTE - This is a slightly modified clone of est_minority_opportunity in rdapy.
 def est_alt_minority_opportunity(mf: float, demo: Optional[str] = None) -> float:
-    """Estimate the ALTERNATE opportunity for a minority representation.
+    """
+    Estimate the ALTERNATE opportunity for a minority representation.
 
-    NOTE - Shift minority proportions up, so 37% minority scores like 52% share,
-      but use the uncompressed seat probability distribution. This makes a 37%
-      district have a ~70% chance of winning, and a 50% district have a >99% chance.
-      Below 37 % has no chance.
-    NOTE - Sam Wang suggest 90% probability for a 37% district. That seems a little
-      too abrupt and all or nothing, so I backed off to the ~70%.
+    NOTE - This is a slightly modified clone of est_minority_opportunity in rdapy.
     """
 
     assert mf >= 0.0
 
-    range: list[float] = [0.37, 0.50]
+    # range: list[float] = [0.37, 0.50]
 
     shift: float = 0.15  # For Black VAP % (and Minority)
     dilution: float = 0.50  # For other demos, dilute the Black shift by half
@@ -517,12 +514,15 @@ def est_alt_minority_opportunity(mf: float, demo: Optional[str] = None) -> float
     return oppty
 
 
-# NOTE - This is a clone of calc_minority_opportunity in rdapy that uses
-# and slightly modified est_alt_minority_opportunity above instead.
 def calc_alt_minority_opportunity(
     statewide_demos: dict[str, float], demos_by_district: list[dict[str, float]]
 ) -> dict[str, float]:
-    """Estimate ALTERNATE minority opportunity (everything except the table which is used in DRA)."""
+    """
+    Estimate ALTERNATE minority opportunity (everything except the table which is used in DRA).
+
+    NOTE - This is a clone of calc_minority_opportunity in rdapy that uses
+    and slightly modified est_alt_minority_opportunity above instead.
+    """
 
     n_districts: int = len(demos_by_district)
 
@@ -566,14 +566,17 @@ def calc_alt_minority_opportunity(
     return results
 
 
-# NOTE - This is a clone of calc_minority_metrics that uses calc_alt_minority_opportunity above,
-# instead of calc_minority_opportunity in rdapy.
 def calc_alt_minority_metrics(
     demos_totals: Dict[str, int],
     demos_by_district: List[Dict[str, int]],
     n_districts: int,
 ) -> Dict[str, float]:
-    """Calculate alternate minority metrics."""
+    """
+    Calculate alternate minority metrics.
+
+    NOTE - This is a clone of calc_minority_metrics that uses calc_alt_minority_opportunity above,
+    instead of calc_minority_opportunity in rdapy.
+    """
 
     statewide_demos: Dict[str, float] = dict()
     for demo in census_fields[2:]:  # Skip total population & total VAP
@@ -634,7 +637,7 @@ def calc_compactness_metrics(
 
 def calc_splitting_metrics(
     CxD: List[List[float]],
-) -> Tuple[Dict[str, float], List[float]]:
+) -> Tuple[Dict[str, float], List[Dict[str, float]]]:
     """Calculate county-district splitting metrics."""
 
     all_results: Dict[str, float] = rda.calc_county_district_splitting(CxD)
@@ -668,20 +671,20 @@ def calc_splitting_metrics(
     cT: list[float] = rda.county_totals(CxD)
     rD: list[list[float]] = rda.reduce_district_splits(CxD, cT)
     g: list[list[float]] = rda.calc_district_fractions(rD, dT)
-    by_district: List[float] = splitting_by_district(g)
+    by_district: List[Dict[str, float]] = splitting_by_district(g)
 
     return splitting_metrics, by_district
 
 
-def splitting_by_district(g: List[List[float]]) -> List[float]:
+def splitting_by_district(g: List[List[float]]) -> List[Dict[str, float]]:
     """Calculate split scores by district."""
 
     numD: int = len(g)
-    by_district: List[float] = list()
+    by_district: List[Dict[str, float]] = list()
 
     for i in range(numD):
         split_score: float = rda.district_split_score(i, g)
-        by_district.append(split_score)
+        by_district.append({"district_splitting": split_score})
 
     return by_district
 
