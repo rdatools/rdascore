@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="rdascore",
-    version="3.0.2",
+    version="3.0.3",
     description="Redistricting analytics for scoring ensembles of redistricting plans",
     url="https://github.com/rdatools/rdascore",
     author="alecramsay",

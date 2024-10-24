@@ -46,7 +46,7 @@ def analyze_plan(
     shapes: Dict[str, Any],
     graph: Dict[str, List[str]],
     metadata: Dict[str, Any],
-    alt_minority: bool = False,  # If True, add an alternative minority opportunity rating
+    alt_minority: bool = True,  # If False, don't add alternative minority opportunity metrics
 ) -> Dict[str, Any]:
     """Analyze a plan."""
 
@@ -613,10 +613,10 @@ def calc_alt_minority_metrics(
     alt_minority_metrics: Dict[str, float] = calc_alt_minority_opportunity(
         statewide_demos, by_district
     )
-    alt_minority_metrics["opportunity_districts_pct"] = (
-        alt_minority_metrics["opportunity_districts"]
-        / alt_minority_metrics["proportional_opportunities"]
-    )
+    # alt_minority_metrics["opportunity_districts_pct"] = (
+    #     alt_minority_metrics["opportunity_districts"]
+    #     / alt_minority_metrics["proportional_opportunities"]
+    # )
 
     return alt_minority_metrics
 
