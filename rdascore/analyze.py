@@ -39,7 +39,7 @@ dem_votes_field: str = election_fields[2]
 # oth_votes_field: str = election_fields[3]
 
 
-@time_function
+# @time_function
 def analyze_plan(
     assignments: List[Assignment],
     data: Dict[str, Dict[str, str | int]],
