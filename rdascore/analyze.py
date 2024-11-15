@@ -134,7 +134,7 @@ def analyze_plan(
                 alt_minority_metrics["proportional_coalitions"],
             )
 
-    if which == "all" or which == "compactness":
+    if which in ["all", "compactness", "extended"]:
         district_props = aggregate_shapes_by_district(
             assignments, shapes, graph, n_districts
         )
@@ -168,7 +168,7 @@ def analyze_plan(
         # assert len(compactness_by_district) == len(splitting_by_district)
         # assert len(compactness_by_district) == len(spanning_tree_by_district)
 
-    if which == "all" or which == "splitting":
+    if which in ["all", "splitting", "extended"]:
         splitting_metrics: Dict[str, float]
         splitting_by_district: List[Dict[str, float]]
         splitting_metrics, splitting_by_district = calc_splitting_metrics(
