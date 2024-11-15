@@ -145,7 +145,7 @@ def analyze_plan(
         )
 
         # Additional discrete compactness metrics
-        plan: Dict[str, int | str] = {a.geoid: a.district for a in assignments}  # TODO
+        plan: Dict[str, int | str] = {a.geoid: a.district for a in assignments}
         cut_score: int = calc_cut_score(plan, graph)
 
         district_graphs = split_graph_by_districts(graph, plan)
