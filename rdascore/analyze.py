@@ -89,27 +89,27 @@ def analyze_plan(
             aggregates["d_by_district"],
             aggregates["tot_by_district"],
         )
-        partisan_metrics["proportionality"] = rate_proportionality(
+        scorecard.update(partisan_metrics)
+        scorecard["proportionality"] = rate_proportionality(
             scorecard["pr_deviation"],
             scorecard["estimated_vote_pct"],
             scorecard["estimated_seat_pct"],
         )
-        partisan_metrics["competitiveness"] = rate_competitiveness(
+        scorecard["competitiveness"] = rate_competitiveness(
             scorecard["competitive_district_pct"]
         )
-        scorecard.update(partisan_metrics)
 
     if which == "all" or which == "minority":
         minority_metrics = calc_minority_metrics(
             aggregates["demos_totals"], aggregates["demos_by_district"], n_districts
         )
-        minority_metrics["minority"] = rate_minority_opportunity(
+        scorecard.update(minority_metrics)
+        scorecard["minority"] = rate_minority_opportunity(
             scorecard["opportunity_districts"],
             scorecard["proportional_opportunities"],
             scorecard["coalition_districts"],
             scorecard["proportional_coalitions"],
         )
-        scorecard.update(minority_metrics)
 
         # Additional alternate minority ratings
         if alt_minority:
@@ -126,13 +126,13 @@ def analyze_plan(
                     "coalition_districts",
                 ]
             }
-            subset["minority_alt"] = rate_minority_opportunity(
+            scorecard.update(subset)
+            scorecard["minority_alt"] = rate_minority_opportunity(
                 alt_minority_metrics["opportunity_districts"],
                 alt_minority_metrics["proportional_opportunities"],
                 alt_minority_metrics["coalition_districts"],
                 alt_minority_metrics["proportional_coalitions"],
             )
-            scorecard.update(subset)
 
     if which == "all" or which == "compactness":
         district_props = aggregate_shapes_by_district(
@@ -159,10 +159,10 @@ def analyze_plan(
 
         compactness_metrics["cut_score"] = cut_score
         compactness_metrics["spanning_tree_score"] = spanning_tree_score
-        compactness_metrics["compactness"] = rate_compactness(
+        scorecard.update(compactness_metrics)
+        scorecard["compactness"] = rate_compactness(
             scorecard["reock"], scorecard["polsby_popper"]
         )
-        scorecard.update(compactness_metrics)
 
         # Combine the by-district metrics
         # assert len(compactness_by_district) == len(splitting_by_district)
@@ -174,13 +174,13 @@ def analyze_plan(
         splitting_metrics, splitting_by_district = calc_splitting_metrics(
             aggregates["CxD"]
         )
-        splitting_metrics["splitting"] = rate_splitting(
+        scorecard.update(splitting_metrics)
+        scorecard["splitting"] = rate_splitting(
             scorecard["county_splitting"],
             scorecard["district_splitting"],
             n_counties,
             n_districts,
         )
-        scorecard.update(splitting_metrics)
 
     if which:  # Combine the by-district metrics
         by_district_metrics: List[List[Dict[str, float]]] = []

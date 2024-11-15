@@ -12,7 +12,7 @@ from .analyze import (
     calc_alt_minority_opportunity,
     calc_compactness_metrics,
     calc_splitting_metrics,
-    rate_dimensions,
+    # rate_dimensions,
 )
 from .discrete_compactness import (
     calc_cut_score,
