@@ -19,4 +19,4 @@ $ python3 -m twine upload --repository pypi dist/rdascore-x.y.z*.*
 
 where x.y.z is the version number. For example:
 
-$ python3 -m twine upload --repository pypi dist/rdascore-4.0.1*.*
+$ python3 -m twine upload --repository pypi dist/rdascore-4.0.2*.*

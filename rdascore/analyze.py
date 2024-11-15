@@ -185,7 +185,7 @@ def analyze_plan(
     if which:  # Combine the by-district metrics
         by_district: List[Dict[str, float]] = list()
         by_district_metrics: List[List[Dict[str, float]]] = []
-        if which == "all":
+        if which == "all" or which == "extended":
             by_district_metrics = [
                 compactness_by_district,
                 spanning_tree_by_district,
