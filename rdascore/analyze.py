@@ -13,7 +13,7 @@ from rdabase import (
     OUT_OF_STATE,
     Assignment,
     approx_equal,
-    time_function,
+    # time_function,
 )
 from .discrete_compactness import (
     calc_cut_score,
@@ -48,7 +48,7 @@ def analyze_plan(
     metadata: Dict[str, Any],
     alt_minority: bool = True,  # If False, don't add alternative minority opportunity metrics
     *,
-    which: str = "all",
+    which: str = "all",  # Or just "partisan", "minority", "compactness", "splitting"
 ) -> Dict[str, Any]:
     """Analyze a plan."""
 
@@ -57,13 +57,11 @@ def analyze_plan(
     county_to_index: Dict[str, int] = metadata["county_to_index"]
     district_to_index: Dict[int | str, int] = metadata["district_to_index"]
 
-    scorecard: Dict[str, Any] = dict()
-    scorecard["D"] = n_districts
-    scorecard["C"] = n_counties
-
     aggregates: Dict[str, Any] = dict()
     district_props: List[Dict[str, float]] = list()
     minority_metrics: Dict[str, float] = dict()
+
+    scorecard: Dict[str, Any] = dict()
 
     if which == "all" or which != "compactness":
         aggregates = aggregate_data_by_district(
@@ -76,9 +74,13 @@ def analyze_plan(
         )
 
     if which == "all" or which == "partisan":
+        # Include these with the partisan metrics
+        scorecard["D"] = n_districts
+        scorecard["C"] = n_counties
+
         deviation: float = calc_population_deviation(
             aggregates["pop_by_district"], aggregates["total_pop"], n_districts
-        )  # include this with partisan metrics
+        )
         scorecard["population_deviation"] = deviation
 
         partisan_metrics: Dict[str, Optional[float]] = calc_partisan_metrics(
@@ -180,22 +182,22 @@ def analyze_plan(
         )
         scorecard.update(splitting_metrics)
 
-    # Combine the by-district metrics
-    by_district_metrics: List[List[Dict[str, float]]] = []
-    if which == "all":
-        by_district_metrics = [
-            compactness_by_district,
-            spanning_tree_by_district,
-            splitting_by_district,
-        ]
-    elif which == "compactness":
-        by_district_metrics = [compactness_by_district, spanning_tree_by_district]
-    elif which == "splitting":
-        by_district_metrics = [splitting_by_district]
-    else:
-        by_district_metrics = []
-    by_district = [{**x, **y, **z} for x, y, z in zip(*by_district_metrics)]
-    scorecard["by_district"] = by_district
+    if which:  # Combine the by-district metrics
+        by_district_metrics: List[List[Dict[str, float]]] = []
+        if which == "all":
+            by_district_metrics = [
+                compactness_by_district,
+                spanning_tree_by_district,
+                splitting_by_district,
+            ]
+        elif which == "compactness":
+            by_district_metrics = [compactness_by_district, spanning_tree_by_district]
+        elif which == "splitting":
+            by_district_metrics = [splitting_by_district]
+        else:
+            by_district_metrics = []
+        by_district = [{**x, **y, **z} for x, y, z in zip(*by_district_metrics)]
+        scorecard["by_district"] = by_district
 
     # Trim the floating point numbers
     precision: int = 4
