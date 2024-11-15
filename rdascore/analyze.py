@@ -183,6 +183,7 @@ def analyze_plan(
         )
 
     if which:  # Combine the by-district metrics
+        by_district: List[Dict[str, float]] = list()
         by_district_metrics: List[List[Dict[str, float]]] = []
         if which == "all":
             by_district_metrics = [
@@ -190,13 +191,15 @@ def analyze_plan(
                 spanning_tree_by_district,
                 splitting_by_district,
             ]
+            by_district = [{**x, **y, **z} for x, y, z in zip(*by_district_metrics)]
         elif which == "compactness":
             by_district_metrics = [compactness_by_district, spanning_tree_by_district]
+            by_district = [{**x, **y} for x, y in zip(*by_district_metrics)]
         elif which == "splitting":
-            by_district_metrics = [splitting_by_district]
+            by_district = splitting_by_district
         else:
             by_district_metrics = []
-        by_district = [{**x, **y, **z} for x, y, z in zip(*by_district_metrics)]
+
         scorecard["by_district"] = by_district
 
     # Trim the floating point numbers

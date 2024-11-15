@@ -30,6 +30,7 @@ from rdascore import (
 # Specify a state and an ensemble of plans
 
 xx: str = "NJ"
+which: str = "all"
 
 ### PATHS TO FILES ###
 
@@ -76,6 +77,7 @@ for plan_path in ensemble:
             shapes,
             graph,
             metadata,
+            which=which,
         )
 
         # Do something with the resulting "scorecard"
