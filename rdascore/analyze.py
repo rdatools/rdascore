@@ -47,6 +47,8 @@ def analyze_plan(
     graph: Dict[str, List[str]],
     metadata: Dict[str, Any],
     alt_minority: bool = True,  # If False, don't add alternative minority opportunity metrics
+    *,
+    which: str = "all",
 ) -> Dict[str, Any]:
     """Analyze a plan."""
 
@@ -55,129 +57,144 @@ def analyze_plan(
     county_to_index: Dict[str, int] = metadata["county_to_index"]
     district_to_index: Dict[int | str, int] = metadata["district_to_index"]
 
-    ### AGGREGATE DATA & SHAPES BY DISTRICT ###
-
-    aggregates: Dict[str, Any] = aggregate_data_by_district(
-        assignments, data, n_districts, n_counties, county_to_index, district_to_index
-    )
-    district_props: List[Dict[str, float]] = aggregate_shapes_by_district(
-        assignments, shapes, graph, n_districts
-    )
-
-    ### CALCULATE THE METRICS ###
-
-    deviation: float = calc_population_deviation(
-        aggregates["pop_by_district"], aggregates["total_pop"], n_districts
-    )
-    partisan_metrics: Dict[str, Optional[float]] = calc_partisan_metrics(
-        aggregates["total_d_votes"],
-        aggregates["total_votes"],
-        aggregates["d_by_district"],
-        aggregates["tot_by_district"],
-    )
-    minority_metrics: Dict[str, float] = calc_minority_metrics(
-        aggregates["demos_totals"], aggregates["demos_by_district"], n_districts
-    )
-    compactness_metrics: Dict[str, float]
-    compactness_by_district: List[Dict[str, float]]
-    compactness_metrics, compactness_by_district = calc_compactness_metrics(
-        district_props
-    )
-
-    splitting_metrics: Dict[str, float]
-    splitting_by_district: List[Dict[str, float]]
-    splitting_metrics, splitting_by_district = calc_splitting_metrics(aggregates["CxD"])
-
-    # Additional discrete compactness metrics
-    plan: Dict[str, int | str] = {a.geoid: a.district for a in assignments}
-    cut_score: int = calc_cut_score(plan, graph)
-
-    district_graphs = split_graph_by_districts(graph, plan)
-    spanning_tree_by_district: List[Dict[str, float]] = [
-        {"spanning_tree_score": calc_spanning_tree_score(g)}
-        for g in district_graphs.values()
-    ]
-    spanning_tree_score: float = sum(
-        d["spanning_tree_score"] for d in spanning_tree_by_district
-    )
-
-    # Additional alternate minority ratings
-    if alt_minority:
-        alt_minority_metrics: Dict[str, float] = calc_alt_minority_metrics(
-            aggregates["demos_totals"], aggregates["demos_by_district"], n_districts
-        )
-
-    # Combine the by-district metrics
-    assert len(compactness_by_district) == len(splitting_by_district)
-    assert len(compactness_by_district) == len(spanning_tree_by_district)
-
-    by_district = [
-        {**x, **y, **z}
-        for x, y, z in zip(
-            compactness_by_district,
-            spanning_tree_by_district,
-            splitting_by_district,
-        )
-    ]
-
-    # Build the scorecard
     scorecard: Dict[str, Any] = dict()
     scorecard["D"] = n_districts
     scorecard["C"] = n_counties
-    scorecard["population_deviation"] = deviation
-    scorecard.update(partisan_metrics)
-    scorecard.update(minority_metrics)
-    if alt_minority:
-        subset: Dict[str, float] = {
-            f"alt_{k}": v
-            for k, v in alt_minority_metrics.items()
-            if k
-            in [
-                "opportunity_districts",
-                "opportunity_districts_pct",
-                "coalition_districts",
-            ]
-        }
-        scorecard.update(subset)
-    scorecard.update(compactness_metrics)
-    scorecard["cut_score"] = cut_score
-    scorecard["spanning_tree_score"] = spanning_tree_score
-    scorecard.update(splitting_metrics)
 
-    # Rate the dimensions
-    ratings: Dict[str, int] = rate_dimensions(
-        proportionality=(
+    aggregates: Dict[str, Any] = dict()
+    district_props: List[Dict[str, float]] = list()
+    minority_metrics: Dict[str, float] = dict()
+
+    if which == "all" or which != "compactness":
+        aggregates = aggregate_data_by_district(
+            assignments,
+            data,
+            n_districts,
+            n_counties,
+            county_to_index,
+            district_to_index,
+        )
+
+    if which == "all" or which == "partisan":
+        deviation: float = calc_population_deviation(
+            aggregates["pop_by_district"], aggregates["total_pop"], n_districts
+        )  # include this with partisan metrics
+        scorecard["population_deviation"] = deviation
+
+        partisan_metrics: Dict[str, Optional[float]] = calc_partisan_metrics(
+            aggregates["total_d_votes"],
+            aggregates["total_votes"],
+            aggregates["d_by_district"],
+            aggregates["tot_by_district"],
+        )
+        partisan_metrics["proportionality"] = rate_proportionality(
             scorecard["pr_deviation"],
             scorecard["estimated_vote_pct"],
             scorecard["estimated_seat_pct"],
-        ),
-        competitiveness=(scorecard["competitive_district_pct"],),
-        minority=(
+        )
+        partisan_metrics["competitiveness"] = rate_competitiveness(
+            scorecard["competitive_district_pct"]
+        )
+        scorecard.update(partisan_metrics)
+
+    if which == "all" or which == "minority":
+        minority_metrics = calc_minority_metrics(
+            aggregates["demos_totals"], aggregates["demos_by_district"], n_districts
+        )
+        minority_metrics["minority"] = rate_minority_opportunity(
             scorecard["opportunity_districts"],
             scorecard["proportional_opportunities"],
             scorecard["coalition_districts"],
             scorecard["proportional_coalitions"],
-        ),
-        compactness=(scorecard["reock"], scorecard["polsby_popper"]),
-        splitting=(
+        )
+        scorecard.update(minority_metrics)
+
+        # Additional alternate minority ratings
+        if alt_minority:
+            alt_minority_metrics: Dict[str, float] = calc_alt_minority_metrics(
+                aggregates["demos_totals"], aggregates["demos_by_district"], n_districts
+            )
+            subset: Dict[str, float] = {
+                f"alt_{k}": v
+                for k, v in alt_minority_metrics.items()
+                if k
+                in [
+                    "opportunity_districts",
+                    "opportunity_districts_pct",
+                    "coalition_districts",
+                ]
+            }
+            subset["minority_alt"] = rate_minority_opportunity(
+                alt_minority_metrics["opportunity_districts"],
+                alt_minority_metrics["proportional_opportunities"],
+                alt_minority_metrics["coalition_districts"],
+                alt_minority_metrics["proportional_coalitions"],
+            )
+            scorecard.update(subset)
+
+    if which == "all" or which == "compactness":
+        district_props = aggregate_shapes_by_district(
+            assignments, shapes, graph, n_districts
+        )
+        compactness_metrics: Dict[str, float]
+        compactness_by_district: List[Dict[str, float]]
+        compactness_metrics, compactness_by_district = calc_compactness_metrics(
+            district_props
+        )
+
+        # Additional discrete compactness metrics
+        plan: Dict[str, int | str] = {a.geoid: a.district for a in assignments}  # TODO
+        cut_score: int = calc_cut_score(plan, graph)
+
+        district_graphs = split_graph_by_districts(graph, plan)
+        spanning_tree_by_district: List[Dict[str, float]] = [
+            {"spanning_tree_score": calc_spanning_tree_score(g)}
+            for g in district_graphs.values()
+        ]
+        spanning_tree_score: float = sum(
+            d["spanning_tree_score"] for d in spanning_tree_by_district
+        )
+
+        compactness_metrics["cut_score"] = cut_score
+        compactness_metrics["spanning_tree_score"] = spanning_tree_score
+        compactness_metrics["compactness"] = rate_compactness(
+            scorecard["reock"], scorecard["polsby_popper"]
+        )
+        scorecard.update(compactness_metrics)
+
+        # Combine the by-district metrics
+        # assert len(compactness_by_district) == len(splitting_by_district)
+        # assert len(compactness_by_district) == len(spanning_tree_by_district)
+
+    if which == "all" or which == "splitting":
+        splitting_metrics: Dict[str, float]
+        splitting_by_district: List[Dict[str, float]]
+        splitting_metrics, splitting_by_district = calc_splitting_metrics(
+            aggregates["CxD"]
+        )
+        splitting_metrics["splitting"] = rate_splitting(
             scorecard["county_splitting"],
             scorecard["district_splitting"],
             n_counties,
             n_districts,
-        ),
-    )
-
-    if alt_minority:
-        ratings["minority_alt"] = rda.rate_minority_opportunity(
-            alt_minority_metrics["opportunity_districts"],
-            alt_minority_metrics["proportional_opportunities"],
-            alt_minority_metrics["coalition_districts"],
-            alt_minority_metrics["proportional_coalitions"],
         )
+        scorecard.update(splitting_metrics)
 
-    scorecard.update(ratings)
-
-    # Add the by-district metrics
+    # Combine the by-district metrics
+    by_district_metrics: List[List[Dict[str, float]]] = []
+    if which == "all":
+        by_district_metrics = [
+            compactness_by_district,
+            spanning_tree_by_district,
+            splitting_by_district,
+        ]
+    elif which == "compactness":
+        by_district_metrics = [compactness_by_district, spanning_tree_by_district]
+    elif which == "splitting":
+        by_district_metrics = [splitting_by_district]
+    else:
+        by_district_metrics = []
+    by_district = [{**x, **y, **z} for x, y, z in zip(*by_district_metrics)]
     scorecard["by_district"] = by_district
 
     # Trim the floating point numbers
@@ -702,42 +719,88 @@ def splitting_by_district(g: List[List[float]]) -> List[Dict[str, float]]:
     return by_district
 
 
-def rate_dimensions(
-    *,
-    proportionality: tuple,
-    competitiveness: tuple,
-    minority: tuple,
-    compactness: tuple,
-    splitting: tuple,
-) -> Dict[str, int]:
-    """Rate the dimensions of a plan."""
+### RATING FUNCTIONS ###
 
-    ratings: Dict[str, int] = dict()
 
-    disproportionality, Vf, Sf = proportionality
-    ratings["proportionality"] = rda.rate_proportionality(disproportionality, Vf, Sf)
+# def rate_dimensions(
+#     *,
+#     proportionality: tuple,
+#     competitiveness: tuple,
+#     minority: tuple,
+#     compactness: tuple,
+#     splitting: tuple,
+# ) -> Dict[str, int]:
+#     """Rate the dimensions of a plan."""
 
-    cdf = competitiveness[0]
-    ratings["competitiveness"] = rda.rate_competitiveness(cdf)
+#     ratings: Dict[str, int] = dict()
 
-    od, pod, cd, pcd = minority
-    ratings["minority"] = rda.rate_minority_opportunity(od, pod, cd, pcd)
+#     disproportionality, Vf, Sf = proportionality
+#     ratings["proportionality"] = rda.rate_proportionality(disproportionality, Vf, Sf)
 
-    avg_reock, avg_polsby = compactness
+#     cdf = competitiveness[0]
+#     ratings["competitiveness"] = rda.rate_competitiveness(cdf)
+
+#     od, pod, cd, pcd = minority
+#     ratings["minority"] = rda.rate_minority_opportunity(od, pod, cd, pcd)
+
+#     avg_reock, avg_polsby = compactness
+#     reock_rating: int = rda.rate_reock(avg_reock)
+#     polsby_rating: int = rda.rate_polsby(avg_polsby)
+#     ratings["compactness"] = rda.rate_compactness(reock_rating, polsby_rating)
+
+#     county_splitting, district_splitting, n_counties, n_districts = splitting
+#     county_rating: int = rda.rate_county_splitting(
+#         county_splitting, n_counties, n_districts
+#     )
+#     district_rating: int = rda.rate_district_splitting(
+#         district_splitting, n_counties, n_districts
+#     )
+#     ratings["splitting"] = rda.rate_splitting(county_rating, district_rating)
+
+#     return ratings
+
+
+def rate_proportionality(disproportionality: float, Vf: float, Sf: float) -> int:
+    rating: int = rda.rate_proportionality(disproportionality, Vf, Sf)
+
+    return rating
+
+
+def rate_competitiveness(cdf: float) -> int:
+    rating: int = rda.rate_competitiveness(cdf)
+
+    return rating
+
+
+def rate_minority_opportunity(od: float, pod: float, cd: float, pcd: float) -> int:
+    rating: int = rda.rate_minority_opportunity(od, pod, cd, pcd)
+
+    return rating
+
+
+def rate_compactness(avg_reock: int, avg_polsby: int) -> int:
     reock_rating: int = rda.rate_reock(avg_reock)
     polsby_rating: int = rda.rate_polsby(avg_polsby)
-    ratings["compactness"] = rda.rate_compactness(reock_rating, polsby_rating)
+    rating: int = rda.rate_compactness(reock_rating, polsby_rating)
 
-    county_splitting, district_splitting, n_counties, n_districts = splitting
+    return rating
+
+
+def rate_splitting(
+    county_splitting: float,
+    district_splitting: float,
+    n_counties: int,
+    n_districts: int,
+) -> int:
     county_rating: int = rda.rate_county_splitting(
         county_splitting, n_counties, n_districts
     )
     district_rating: int = rda.rate_district_splitting(
         district_splitting, n_counties, n_districts
     )
-    ratings["splitting"] = rda.rate_splitting(county_rating, district_rating)
+    rating: int = rda.rate_splitting(county_rating, district_rating)
 
-    return ratings
+    return rating
 
 
 ### END ###
