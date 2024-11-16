@@ -20,6 +20,7 @@ from rdabase import (
     approx_equal,
     time_function,
 )
+from .smallestenclosingcircle import wl_make_circle
 from .discrete_compactness import (
     calc_cut_score,
     calc_spanning_tree_score,
@@ -405,6 +406,7 @@ def aggregate_shapes_by_district(
             print(f"District {i + 1}:")
 
         _, _, r = rda.make_circle(d["exterior"])
+        _, _, r_prime = wl_make_circle(d["exterior"])
 
         area: float = d["area"]
         perimeter: float = d["perimeter"]

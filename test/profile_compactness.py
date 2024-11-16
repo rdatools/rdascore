@@ -33,6 +33,7 @@ from rdascore import (
 
 xx: str = "NJ"
 which: str = "all"
+size: int = 10
 
 ### PATHS TO FILES ###
 
@@ -72,9 +73,7 @@ metadata: Dict[str, Any] = load_metadata(xx, data_path)
 for plan_path in ensemble:
     try:
         assignments: List[Assignment] = load_plan(plan_path)
-
         n_districts: int = metadata["D"]
-        size: int = 100
 
         tic: float = time.perf_counter()
 
