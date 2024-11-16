@@ -33,7 +33,7 @@ from rdascore import (
 
 xx: str = "NJ"
 which: str = "all"
-size: int = 10
+size: int = 100
 
 ### PATHS TO FILES ###
 
@@ -80,7 +80,11 @@ for plan_path in ensemble:
         for i in range(size):
             print(f"Run {i + 1} of {size} ...")
             district_props: List[Dict[str, float]] = aggregate_shapes_by_district(
-                assignments, shapes, graph, n_districts, debug=True
+                assignments,
+                shapes,
+                graph,
+                n_districts,
+                # debug=True
             )
 
         toc: float = time.perf_counter()

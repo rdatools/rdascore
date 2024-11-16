@@ -405,10 +405,10 @@ def aggregate_shapes_by_district(
     for i, d in enumerate(by_district[1:]):  # Remove the dummy district
         if debug:
             print(f"District {i + 1}:")
-            # print(d["exterior"])
 
-        _, _, r = rda.make_circle(d["exterior"])
-        _, _, r_prime = wl_make_circle(d["exterior"])
+        _, _, r = wl_make_circle(d["exterior"])  # 11-16-24 - Changed for performance
+        # _, _, r_rdapy = rda.make_circle(d["exterior"])
+        # assert approx_equal(r, r_rdapy, places=4)
 
         area: float = d["area"]
         perimeter: float = d["perimeter"]
