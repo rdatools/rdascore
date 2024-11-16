@@ -5,6 +5,11 @@ ANALYZE A PLAN
 from collections import defaultdict
 from typing import Any, List, Dict, Tuple, Optional
 
+import numpy as np
+import miniball as mb
+import math
+from scipy.spatial.distance import pdist, squareform
+
 import rdapy as rda
 from rdabase import (
     census_fields,
@@ -348,7 +353,7 @@ def arcs_are_symmetric(shapes: Dict[str, Any]) -> bool:
     return symmetric
 
 
-@time_function
+# @time_function
 def aggregate_shapes_by_district(
     assignments: List[Assignment],
     shapes: Dict[str, Any],
@@ -396,8 +401,33 @@ def aggregate_shapes_by_district(
 
     implied_district_props: List[Dict[str, float]] = []
     for i, d in enumerate(by_district[1:]):  # Remove the dummy district
-        # print(f"District {i + 1}: {d}")  # DEBUG
-        _, _, r = rda.make_circle(d["exterior"])
+        # https://pypi.org/project/miniball/
+        # https://github.com/marmakoide/miniball
+
+        # print(f"District {i + 1}:")
+
+        # lon, lat, r = rda.make_circle(d["exterior"])
+
+        # S = np.random.randn(5, 2)
+        # print(S)
+
+        # points = np.array(d["exterior"])
+        points = np.unique(d["exterior"], axis=0)
+        # points = np.array(d["exterior"]).T  # Transpose gives shape (2,N)
+        # print(points[:5])
+
+        # diagnosis = is_matrix_singular(points)
+        # print(diagnosis)
+
+        # check_geometry(points)
+
+        C, r2 = mb.get_bounding_ball(points)  # type: ignore
+        r = math.sqrt(r2)
+
+        # print(f"r: {r}, r': {r_prime} (diff: {r - r_prime})")
+
+        # S = np.random.randn(100, 2)
+        # _, r2 = mb.get_bounding_ball(S)  # type: ignore
 
         area: float = d["area"]
         perimeter: float = d["perimeter"]
@@ -407,11 +437,311 @@ def aggregate_shapes_by_district(
             {"area": area, "perimeter": perimeter, "diameter": diameter}
         )
 
-        # print(
-        #     f"District {i + 1}: Area = {area}, Perimeter = {perimeter}, Diameter = {diameter}"
-        # )  # DEBUG
-
     return implied_district_props
+
+
+# def safe_get_bounding_ball(S, epsilon=1e-7, rng=np.random.default_rng()):
+#     """
+#     Wrapper for get_bounding_ball with robust preprocessing.
+#     """
+#     try:
+#         # Preprocess points
+#         processed_points, metadata = preprocess_points(
+#             S, min_distance=epsilon, scale=True, remove_duplicates=True
+#         )
+
+#         # Check if we have enough points after preprocessing
+#         if len(processed_points) < 2:
+#             raise ValueError(
+#                 f"Not enough distinct points after preprocessing: {len(processed_points)} points"
+#             )
+
+#         # Run original bounding ball calculation
+#         center, radius = mb.get_bounding_ball(processed_points, epsilon, rng)  # type: ignore
+
+#         # Transform result back to original space
+#         center, radius = postprocess_result(center, radius, metadata)
+
+#         return center, radius
+
+#     except Exception as e:
+#         print(f"Error in bounding ball calculation: {str(e)}")
+#         print("\nInput statistics:")
+#         print(f"Original shape: {S.shape}")
+#         print(f"Range: [{np.min(S)}, {np.max(S)}]")
+#         print(f"Contains NaN: {np.any(np.isnan(S))}")
+#         print(f"Contains inf: {np.any(np.isinf(S))}")
+#         raise
+
+
+# def preprocess_points(points, min_distance=1e-7, scale=True, remove_duplicates=True):
+#     """
+#     Preprocess points to avoid numerical stability issues in miniball calculation.
+
+#     Parameters
+#     ----------
+#     points : ndarray
+#         Input points array of shape (n_points, n_dimensions)
+#     min_distance : float
+#         Minimum distance between points to be considered distinct
+#     scale : bool
+#         Whether to scale points to improve numerical stability
+#     remove_duplicates : bool
+#         Whether to remove duplicate or very close points
+
+#     Returns
+#     -------
+#     ndarray
+#         Preprocessed points
+#     dict
+#         Preprocessing metadata for potentially reversing transformations
+#     """
+#     if not isinstance(points, np.ndarray):
+#         points = np.array(points, dtype=np.float64)
+
+#     # Store original points for reference
+#     original_points = points.copy()
+
+#     # Step 1: Remove any NaN or infinite values
+#     valid_mask = np.all(np.isfinite(points), axis=1)
+#     points = points[valid_mask]
+
+#     if len(points) == 0:
+#         raise ValueError("No valid points after removing NaN/infinite values")
+
+#     # Step 2: Remove duplicate or very close points
+#     if remove_duplicates and len(points) > 1:
+#         # Compute pairwise distances
+#         distances = pdist(points)
+#         # Convert to square form for easier indexing
+#         dist_matrix = squareform(distances)
+
+#         # Find points that are too close
+#         keep_mask = np.ones(len(points), dtype=bool)
+#         for i in range(len(points)):
+#             if keep_mask[i]:
+#                 # Mark points that are too close to point i for removal
+#                 too_close = dist_matrix[i] < min_distance
+#                 too_close[i] = False  # Don't remove point i itself
+#                 keep_mask[too_close] = False
+
+#         points = points[keep_mask]
+
+#     # Step 3: Center and scale points if requested
+#     metadata = {}
+#     if scale:
+#         # Center points
+#         center = np.mean(points, axis=0)
+#         points = points - center
+#         metadata["center"] = center
+
+#         # Scale points to have reasonable magnitude
+#         scale_factor = np.max(np.abs(points))
+#         if scale_factor > 0:
+#             points = points / scale_factor
+#             metadata["scale"] = scale_factor
+
+#     # Step 4: Add small jitter to remaining duplicate points if any exist
+#     if len(points) > 1:
+#         duplicates = True
+#         while duplicates:
+#             distances = pdist(points)
+#             if np.any(distances < min_distance):
+#                 # Add small random jitter to all points
+#                 jitter = np.random.randn(*points.shape) * min_distance * 0.1
+#                 points = points + jitter
+#             else:
+#                 duplicates = False
+
+#     metadata.update(
+#         {
+#             "original_points": original_points,
+#             "valid_mask": valid_mask,
+#             "min_distance": min_distance,
+#         }
+#     )
+
+#     return points, metadata
+
+
+# def postprocess_result(center, radius, metadata):
+#     """
+#     Transform the miniball result back to original scale if preprocessing was applied.
+
+#     Parameters
+#     ----------
+#     center : ndarray
+#         Center point of the miniball in preprocessed space
+#     radius : float
+#         Radius of the miniball in preprocessed space
+#     metadata : dict
+#         Preprocessing metadata from preprocess_points
+
+#     Returns
+#     -------
+#     ndarray, float
+#         Center and radius in original space
+#     """
+#     if "scale" in metadata:
+#         center = center * metadata["scale"]
+#         radius = radius * metadata["scale"]
+
+#     if "center" in metadata:
+#         center = center + metadata["center"]
+
+#     return center, radius
+
+
+# def is_matrix_singular(A, tol=1e-10):
+#     """
+#     Check if a matrix is singular using rank and conditioning.
+
+#     Args:
+#         A: Input matrix (numpy array)
+#         tol: Tolerance for numerical calculations
+
+#     Returns:
+#         dict: Diagnosis results including if matrix is singular and why
+#     """
+#     A = np.array(A, dtype=float)
+#     min_dim = min(A.shape)
+#     rank = np.linalg.matrix_rank(A)
+
+#     diagnosis = {"is_singular": False, "reason": None, "rank": rank, "shape": A.shape}
+
+#     # Check rank deficiency
+#     if rank < min_dim:
+#         diagnosis["is_singular"] = True
+#         diagnosis["reason"] = f"Rank deficient: rank {rank} < min dimension {min_dim}"
+#         return diagnosis
+
+#     # Check condition number for numerical singularity
+#     try:
+#         cond = np.linalg.cond(A)
+#         if cond > 1 / tol:
+#             diagnosis["is_singular"] = True
+#             diagnosis["reason"] = f"Ill-conditioned: condition number {cond:.2e}"
+#         diagnosis["condition_number"] = cond
+#     except np.linalg.LinAlgError:
+#         diagnosis["is_singular"] = True
+#         diagnosis["reason"] = "Could not compute condition number (likely singular)"
+
+#     return diagnosis
+
+
+# def analyze_point_geometry(points, tolerance=1e-8):
+#     """
+#     Analyzes a set of points to determine if they are nearly collinear or coplanar.
+
+#     Parameters
+#     ----------
+#     points : ndarray
+#         Array of points with shape (n, d) where n is number of points
+#         and d is dimensionality
+#     tolerance : float
+#         Tolerance for considering singular values as zero
+
+#     Returns
+#     -------
+#     dict
+#         Dictionary containing analysis results
+#     """
+#     if len(points) < 2:
+#         return {"status": "insufficient_points", "dimension": 0}
+
+#     # Center the points
+#     centered = points - np.mean(points, axis=0)
+
+#     # Compute SVD of the centered points
+#     _, singular_values, _ = np.linalg.svd(centered)
+
+#     # Normalize singular values
+#     normalized_sv = singular_values / singular_values[0]
+
+#     # Count significant dimensions (singular values above tolerance)
+#     significant_dims = np.sum(normalized_sv > tolerance)
+
+#     # Determine geometric arrangement
+#     dim = points.shape[1]
+#     if significant_dims == 1:
+#         status = "collinear"
+#     elif significant_dims == 2 and dim > 2:
+#         status = "coplanar"
+#     else:
+#         status = f"{significant_dims}_dimensional"
+
+#     # Calculate additional metrics
+#     max_deviation = 0
+#     explanation = ""
+
+#     if status == "collinear":
+#         # Calculate maximum deviation from best-fit line
+#         direction = centered[np.argmax(np.linalg.norm(centered, axis=1))]
+#         direction = direction / np.linalg.norm(direction)
+#         projections = np.outer(centered.dot(direction), direction)
+#         deviations = np.linalg.norm(centered - projections, axis=1)
+#         max_deviation = np.max(deviations)
+#         explanation = (
+#             f"Maximum deviation from line: {max_deviation:.2e}\n"
+#             f"Points are effectively {status}"
+#         )
+
+#     elif status == "coplanar":
+#         # Calculate maximum deviation from best-fit plane
+#         normal = np.cross(centered[0], centered[1])
+#         normal = normal / np.linalg.norm(normal)
+#         deviations = np.abs(centered.dot(normal))
+#         max_deviation = np.max(deviations)
+#         explanation = (
+#             f"Maximum deviation from plane: {max_deviation:.2e}\n"
+#             f"Points are effectively {status}"
+#         )
+
+#     results = {
+#         "status": status,
+#         "singular_values": singular_values,
+#         "normalized_singular_values": normalized_sv,
+#         "significant_dimensions": significant_dims,
+#         "max_deviation": max_deviation,
+#         "explanation": explanation,
+#     }
+
+#     return results
+
+
+# def check_geometry(points, tolerance=1e-8, verbose=True):
+#     """
+#     Convenient wrapper to analyze and print results about point geometry.
+
+#     Parameters
+#     ----------
+#     points : ndarray
+#         Input points to analyze
+#     tolerance : float
+#         Tolerance for geometric tests
+#     verbose : bool
+#         Whether to print detailed results
+
+#     Returns
+#     -------
+#     bool
+#         True if points are nearly collinear (2D) or coplanar (3D)
+#     """
+#     results = analyze_point_geometry(points, tolerance)
+
+#     if verbose:
+#         print("\nGeometric Analysis Results:")
+#         print("--------------------------")
+#         print(f"Status: {results['status']}")
+#         print(f"Significant dimensions: {results['significant_dimensions']}")
+#         print("\nSingular values (normalized):")
+#         for i, sv in enumerate(results["normalized_singular_values"]):
+#             print(f"  σ{i+1}: {sv:.2e}")
+
+#         if results["explanation"]:
+#             print("\n" + results["explanation"])
+
+#     return results["status"] in ["collinear", "coplanar"]
 
 
 # @time_function
