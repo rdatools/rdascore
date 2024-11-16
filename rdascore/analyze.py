@@ -5,6 +5,7 @@ ANALYZE A PLAN
 from collections import defaultdict
 from typing import Any, List, Dict, Tuple, Optional
 
+import sys
 import numpy as np
 import miniball as mb
 import math
@@ -404,6 +405,7 @@ def aggregate_shapes_by_district(
     for i, d in enumerate(by_district[1:]):  # Remove the dummy district
         if debug:
             print(f"District {i + 1}:")
+            # print(d["exterior"])
 
         _, _, r = rda.make_circle(d["exterior"])
         _, _, r_prime = wl_make_circle(d["exterior"])

@@ -1,6 +1,6 @@
 import math
 import random
-from typing import NamedTuple, Iterator
+from typing import NamedTuple, Iterator, Callable
 
 # adapted from "Smallest enclosing disks (balls and ellipsoids)" by EMO WELZL, p.362
 
@@ -38,7 +38,7 @@ def B_MINIDISK(points: list[Point], R: list[Point]) -> WelzlCircle:
 
 
 # non-recursive version of B_MINIDISK
-def wl_B_MINIDISK(points: list[Point]) -> WelzlCircle:
+def wl_B_MINIDISK(points: list[Point], _: list[Point]) -> WelzlCircle:
     wl: list[tuple[tuple[int, int], list[Point]]] = [((0, 0), [])]
     retval: WelzlCircle = WelzlCircle(Circle(Point(999, 999), 999), [])  # phony value
     while wl:
@@ -93,7 +93,7 @@ def circleRadius(b: Point, c: Point, d: Point) -> Circle:
     det: float = (b[0] - c[0]) * (c[1] - d[1]) - (c[0] - d[0]) * (b[1] - c[1])
 
     if abs(det) < 1.0e-10:
-        raise ValueError("The three points are colinear")
+        raise ValueError(f"The three points are colinear {b}, {c}, {d}")
 
     # Center of circle
     cx: float = (bc * (c[1] - d[1]) - cd * (b[1] - c[1])) / det
@@ -129,21 +129,27 @@ def stride0(L: list[list[Point]]) -> Iterator[Point]:
     yield from stride0(left + right)
 
 
-def new_make_circle(points: list[tuple[float, float]]) -> AlecCircle:
-    ordered: list[Point] = [Point(x, y) for x, y in points]
+def do_make_circle(
+    points: list[tuple[float, float]],
+    fn: Callable[[list[Point], list[Point]], WelzlCircle],
+) -> AlecCircle:
+    ordered = list(set(Point(x, y) for x, y in points))
+    # ordered: list[Point] = [Point(x, y) for x, y in set(points)]
     random.shuffle(ordered)  # shuffle to avoid worst case
-    ordered = list(stride(ordered))  # optimize for convex hull path?
-    x: WelzlCircle = B_MINIDISK(ordered, [])
+    # ordered = list(stride(ordered))  # optimize for convex hull path?
+    # ordered = list(reversed(ordered))
+    x: WelzlCircle = fn(ordered, [])
     return AlecCircle(x.circle.center.x, x.circle.center.y, x.circle.r)
+
+
+# DO NOT USE THIS FUNCTION because of recursion depth issues
+def new_make_circle(points: list[tuple[float, float]]) -> AlecCircle:
+    return do_make_circle(points, B_MINIDISK)
 
 
 # uses non-recursive version of B_MINIDISK
 def wl_make_circle(points: list[tuple[float, float]]) -> AlecCircle:
-    ordered: list[Point] = [Point(x, y) for x, y in points]
-    random.shuffle(ordered)
-    ordered = list(stride(ordered))
-    x: WelzlCircle = wl_B_MINIDISK(ordered)
-    return AlecCircle(x.circle.center.x, x.circle.center.y, x.circle.r)
+    return do_make_circle(points, wl_B_MINIDISK)
 
 
 ### END ###
