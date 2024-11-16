@@ -332,6 +332,27 @@ def border_length(
     return arc_length
 
 
+def exterior(
+    geoid: str,
+    district: int | str,
+    district_by_geoid: Dict[str, int | str],
+    shapes: Dict[str, Any],
+    graph: Dict[str, List[str]],
+) -> list:
+    """points on exterior of district(-ish)"""
+
+    ext = []
+
+    for n in graph[geoid]:
+        if n == OUT_OF_STATE:
+            if OUT_OF_STATE in shapes[geoid]["arcs"]:
+                ext.extend(shapes[geoid]["exterior"])
+        elif district_by_geoid[n] != district:
+            ext.extend(shapes[geoid]["exterior"])
+
+    return ext
+
+
 def arcs_are_symmetric(shapes: Dict[str, Any]) -> bool:
     symmetric: bool = True
     narcs: int = 0
@@ -397,7 +418,10 @@ def aggregate_shapes_by_district(
         by_district[district]["perimeter"] += border_length(
             geoid, district, district_by_geoid, shapes, graph
         )
-        by_district[district]["exterior"].extend(shapes[geoid]["exterior"])
+        by_district[district]["exterior"].extend(
+            exterior(geoid, district, district_by_geoid, shapes, graph)
+        )
+        # by_district[district]["exterior"].extend(shapes[geoid]["exterior"])
 
     # Calculate district diameters
 
@@ -407,8 +431,9 @@ def aggregate_shapes_by_district(
             print(f"District {i + 1}:")
 
         _, _, r = wl_make_circle(d["exterior"])  # 11-16-24 - Changed for performance
-        # _, _, r_rdapy = rda.make_circle(d["exterior"])
-        # assert approx_equal(r, r_rdapy, places=4)
+        # if debug:
+        #     _, _, r_rdapy = rda.make_circle(d["exterior"])
+        #     assert approx_equal(r, r_rdapy, places=4)
 
         area: float = d["area"]
         perimeter: float = d["perimeter"]
