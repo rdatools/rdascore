@@ -420,7 +420,7 @@ def aggregate_shapes_by_district(
         )
         by_district[district]["exterior"].extend(
             exterior(geoid, district, district_by_geoid, shapes, graph)
-        )
+        )  # 11-16-24 - Changed for performance
         # by_district[district]["exterior"].extend(shapes[geoid]["exterior"])
 
     # Calculate district diameters
@@ -431,9 +431,9 @@ def aggregate_shapes_by_district(
             print(f"District {i + 1}:")
 
         _, _, r = wl_make_circle(d["exterior"])  # 11-16-24 - Changed for performance
-        # if debug:
-        #     _, _, r_rdapy = rda.make_circle(d["exterior"])
-        #     assert approx_equal(r, r_rdapy, places=4)
+        if debug:
+            _, _, r_rdapy = rda.make_circle(d["exterior"])
+            assert approx_equal(r, r_rdapy, places=4)
 
         area: float = d["area"]
         perimeter: float = d["perimeter"]
