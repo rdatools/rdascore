@@ -227,7 +227,7 @@ def analyze_plan(
 ### HELPER FUNCTIONS ###
 
 
-@time_function
+# @time_function
 def aggregate_data_by_district(
     assignments: List[Assignment],
     data: Dict[str, Dict[str, str | int]],
@@ -354,6 +354,8 @@ def aggregate_shapes_by_district(
     shapes: Dict[str, Any],
     graph: Dict[str, List[str]],
     n_districts: int,
+    *,
+    debug: bool = False,
 ) -> List[Dict[str, float]]:
     """Aggregate shape data by district for compactness calculations."""
 
@@ -364,7 +366,8 @@ def aggregate_shapes_by_district(
     geoid_field: str = "GEOID" if "GEOID" in assignments[0] else "GEOID20"
     district_field: str = "DISTRICT" if "DISTRICT" in assignments[0] else "District"
 
-    arcs_are_symmetric(shapes)
+    if debug:
+        arcs_are_symmetric(shapes)
 
     for a in assignments:
         plan.append({geoid_field: a.geoid, district_field: a.district})
@@ -411,7 +414,7 @@ def aggregate_shapes_by_district(
     return implied_district_props
 
 
-@time_function
+# @time_function
 def calc_population_deviation(
     pop_by_district: defaultdict[int, int], total_pop: int, n_districts: int
 ) -> float:
@@ -426,7 +429,7 @@ def calc_population_deviation(
     return deviation
 
 
-@time_function
+# @time_function
 def calc_partisan_metrics(
     total_d_votes: int,
     total_votes: int,
@@ -494,7 +497,7 @@ def calc_average_margin(Vf_array: List[float]) -> float:
     return margin
 
 
-@time_function
+# @time_function
 def calc_minority_metrics(
     demos_totals: Dict[str, int],
     demos_by_district: List[Dict[str, int]],
@@ -606,7 +609,7 @@ def calc_alt_minority_opportunity(
     return results
 
 
-@time_function
+# @time_function
 def calc_alt_minority_metrics(
     demos_totals: Dict[str, int],
     demos_by_district: List[Dict[str, int]],
@@ -649,7 +652,7 @@ def calc_alt_minority_metrics(
     return alt_minority_metrics
 
 
-@time_function
+# @time_function
 def calc_compactness_metrics(
     district_props: List[Dict[str, float]]
 ) -> Tuple[Dict[str, float], List[Dict[str, float]]]:
@@ -677,7 +680,7 @@ def calc_compactness_metrics(
     return compactness_metrics, by_district
 
 
-@time_function
+# @time_function
 def calc_splitting_metrics(
     CxD: List[List[float]],
 ) -> Tuple[Dict[str, float], List[Dict[str, float]]]:
