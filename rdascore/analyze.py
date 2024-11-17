@@ -5,10 +5,6 @@ ANALYZE A PLAN
 from collections import defaultdict
 from typing import Any, List, Dict, Tuple, Optional
 
-import sys
-import numpy as np
-import miniball as mb
-import math
 from scipy.spatial.distance import pdist, squareform
 
 import rdapy as rda
