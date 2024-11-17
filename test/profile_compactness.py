@@ -33,7 +33,7 @@ from rdascore import (
 
 xx: str = "NJ"
 which: str = "all"
-size: int = 10
+size: int = 100
 
 ### PATHS TO FILES ###
 
